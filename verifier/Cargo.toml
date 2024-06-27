@@ -1,0 +1,20 @@
+[package]
+name = "verifier"
+version = "0.1.0"
+license = "ISC"
+edition = "2021"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4"
+neon = "1"
+elliptic-curve = { version = "0.13.5", features = ["pkcs8"] }
+p256 = { version = "0.13", features = ["pem", "ecdsa"] }
+serde = { version = "1.0.147", features = ["derive"] }
+serde_json = "1.0"
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn.git", tag = "v0.1.0-alpha.4", package = "tlsn-core" }

@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",   // Set the target JavaScript version (adjust if needed)
+      "module": "commonjs", // Module system (commonjs for Node.js)
+      "outDir": "dist",    // Output compiled JavaScript directory
+      "strict": true,      // Enable strict type checking
+      "esModuleInterop": true // Allow usage of modern ES modules
+    },
+    "include": ["src/index.ts"], // Include source files from the "src" directory
+    "typeRoots": ["./global.d.ts", "./node_modules/@types"]
+  }
+  
