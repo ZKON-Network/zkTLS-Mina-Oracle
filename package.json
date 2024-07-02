@@ -13,6 +13,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/preset-env": "^7.16.4",
+    "@babel/preset-typescript": "^7.16.0",
+    "@types/jest": "^27.0.3",
+    "@typescript-eslint/eslint-plugin": "^7.9.0",
+    "@typescript-eslint/parser": "^7.9.0",
+    "eslint": "^8.7.0",
+    "eslint-plugin-o1js": "^0.4.0",
+    "jest": "^28.1.3",
+    "prettier": "^2.3.2",
+    "ts-jest": "^28.0.8",
     "@noble/curves": "^1.4.0",
     "@types/cors": "^2.8.17",
     "@types/crypto-js": "^4.2.2",
@@ -31,7 +41,9 @@
     "https": "^1.0.0",
     "js-sha256": "^0.11.0",
     "o1js": "^0.18.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "zkapp-cli": "^0.21.5",
+    "mina-signer": "^3.0.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",

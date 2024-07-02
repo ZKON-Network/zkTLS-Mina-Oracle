@@ -1,13 +1,13 @@
-import { Mina, PublicKey, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct} from 'o1js';
+import { Mina, PublicKey, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct, Provable} from 'o1js';
 import { p256, secp256r1 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
-import * as dotenv from 'dotenv';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 
 import config from './config';
-import {numToUint8Array, concatenateUint8Arrays} from './utils';
+import {numToUint8Array, concatenateUint8Arrays, Commitments} from './utils';
+import {eGrainsZkProgram} from './zkProgram'
 
 const Verifier = require("../verifier/index.node");
 
@@ -24,16 +24,17 @@ const sleep = async (ms:any) => {
 
 const pemData = fs.readFileSync('./notary.pub', 'utf-8');
 
-class Commitments extends Struct({
-    availableSupply: Field,
-    timestamp: Field
-  }){
-    constructor(value:{
-      availableSupply: Field,
-      timestamp: Field}){
-      super(value)
-    }
-  }
+const transactionFee = 100_000_000;
+const useCustomLocalNetwork = process.env.USE_CUSTOM_LOCAL_NETWORK === 'true';  
+const network = Mina.Network({
+  mina: useCustomLocalNetwork
+    ? 'http://localhost:8080/graphql'
+    : 'https://api.minascan.io/node/devnet/v1/graphql',
+  lightnetAccountManager: 'http://localhost:8181',
+  // archive: useCustomLocalNetwork
+  // ? '' : 'https://api.minascan.io/archive/devnet/v1/graphql',
+});
+Mina.setActiveInstance(network);
 
 const main = async () => {
     while(true) {
@@ -43,7 +44,6 @@ const main = async () => {
             archive: 'https://api.minascan.io/archive/devnet/v1/graphql',
         });
         Mina.setActiveInstance(Network);        
-
 
         const blockNr:number = 0 //ToDo Check how to get last block number
         const fromBlock = blockNr;
@@ -70,7 +70,7 @@ const main = async () => {
             // //Fetch JSON from IPFS            
             //const requestObjetct = (await axios.get(`${sanitizedConfig.IPFS_GATEWAY}${ipfsHashFile}`)).data;
 
-            // Make the request to
+            // Make the request to TLS-Notary client to fetch NotaryProof. 
             console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post('https://127.0.0.1:5000/egrains',{}, { httpsAgent: agent })).data;
             const {notary_proof,CM,API_RES} = res;
@@ -94,16 +94,16 @@ const main = async () => {
                 "handshake_commitment":json_notary["handshake_summary"]["handshake_commitment"]
               };
 
-            const msg = concatenateUint8Arrays(message);
+            const msgByteArray = concatenateUint8Arrays(message); //
             const sig = p256.Signature.fromCompact(notary_proof["session"]["signature"]["P256"])
-        
+              
             //Construct decommitment from the verified authentic API response.
             class Bytes500 extends Bytes(408) {}
             let preimageBytes = Bytes500.fromString(API_Recv_Dat);
             let hash = Hash.SHA2_256.hash(preimageBytes);
             const D = Field(BigInt(`0x${hash.toHex()}`));
 
-              // Decommitment from verified API Response.
+            // Decommitment from verified API Response.
             class Bytes7 extends Bytes(7){}
             let hash_supply = Hash.SHA2_256.hash(Bytes7.fromString(JSON.stringify(jsonObject['data']['availableSupply'])));
             const api_timestamp:string = jsonObject['timestamp'];
@@ -120,7 +120,8 @@ const main = async () => {
             const commitment = new Commitments({
                 availableSupply: Field(BigInt(`0x${API_RES["F1"]}`)),
                 timestamp: Field(BigInt(`0x${API_RES["F2"]}`))
-            })
+            });
+
 
             const eGrains = ZkProgram({
                 name:'egrains-proof',
@@ -133,25 +134,22 @@ const main = async () => {
                       commitment: Commitments,
                       decommitment: Commitments,
                       C: Field,
-                      D: Field,
+                      D: Field
                     ){
-                      // P256 Signature Verification
-                      const assert = Bool(true);
-                      const public_key_notary = hexToBytes('0206fdfa148e1916ccc96b40d0149df05825ef54b16b711ccc1b991a4de1c6a12c');
-                      assert.assertEquals(p256.verify(sig, 
-                        msg, 
+                        //P256 Signature Verification
+                        const assert = Bool(true);
+                        const public_key_notary = hexToBytes('0206fdfa148e1916ccc96b40d0149df05825ef54b16b711ccc1b991a4de1c6a12c');
+                        assert.assertEquals(p256.verify(sig, 
+                        msgByteArray, 
                         public_key_notary, 
                         {prehash:true}));
                       
-                      // Individual Commitment Verification
-                      D.assertEquals(C);
-            
-                      // Reverify if proof.json sent is untampered. (Not optimal to check twice, but no performance penalty either).
-                      Verifier.verify(JSON.stringify(notary_proof), pemData);
-            
-                      // Committmenet verification of availableSupply & timestamp
-                      commitment.availableSupply.assertEquals(decommitment.availableSupply);
-                      commitment.timestamp.assertEquals(decommitment.timestamp);
+                        // Individual Commitment Verification
+                        D.assertEquals(C);
+                
+                        // Committmenet verification of availableSupply & timestamp
+                        commitment.availableSupply.assertEquals(decommitment.availableSupply);
+                        commitment.timestamp.assertEquals(decommitment.timestamp);
                     }
                   }
                 }
@@ -166,7 +164,7 @@ const main = async () => {
 
             const ok = await verify(proof.toJSON(), eGrainszkP.verificationKey);
             console.timeEnd('Execution of Request to TLSN Client & Proof Generation')
-            //Send the transaction to the callbackFunction
+            //Send the transaction to the zkApp 
         //}
         await sleep(30000); //30 seconds
     }
