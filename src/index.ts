@@ -125,7 +125,7 @@ const main = async () => {
             }
             class Bytes7 extends Bytes(7){}
             const hash_response = Hash.SHA2_256.hash(Bytes7.fromString(JSON.stringify(rawData)));
-            const api_timestamp:string = jsonObject['timestamp'];
+            const api_timestamp:string = parseInt((Date.now() / 1000).toString()).toString();
             class Bytes13 extends Bytes(13){}
             const hash_timestamp = Hash.SHA2_256.hash(Bytes13.fromString(api_timestamp));
 
