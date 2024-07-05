@@ -74,7 +74,8 @@ const main = async () => {
             const requestObjetct = {
               method: 'GET',
               baseURL: 'https://api.coingecko.com/api/v3/coins/bitcoin',
-              path: 'market_data,current_price,usd'
+              path: 'market_data,current_price,usd',
+              zkapp: ''
             }
 
             // Make the request to TLS-Notary client to fetch NotaryProof. 
