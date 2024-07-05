@@ -1,13 +1,14 @@
-import { Mina, PublicKey, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct, Provable} from 'o1js';
+import { Mina, PublicKey,PrivateKey,Lightnet,fetchAccount, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct, Provable} from 'o1js';
 import { p256, secp256r1 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
+import * as fsextra from 'fs-extra';
 
 import config from './config';
 import {numToUint8Array, concatenateUint8Arrays, Commitments} from './utils';
-import {eGrainsZkProgram} from './zkProgram'
+import { ZkonResponse } from '../build/src/ZkonRequests.js'
 
 const Verifier = require("../verifier/index.node");
 
@@ -22,6 +23,19 @@ const sleep = async (ms:any) => {
     });
 }
 
+//ToDo: Move to utils file.
+class ApiResponseData extends Struct({
+    lastUpdatedAt:Field,
+    availableSupply:Field,
+    circulatingSupply:Field,
+    totalSupply:Field,
+  }){}
+  
+  class ApiResponse extends Struct ({
+    data: ApiResponseData,
+    timestamp: Field
+  }){}
+
 const pemData = fs.readFileSync('./notary.pub', 'utf-8');
 
 const transactionFee = 100_000_000;
@@ -35,6 +49,40 @@ const network = Mina.Network({
   // ? '' : 'https://api.minascan.io/archive/devnet/v1/graphql',
 });
 Mina.setActiveInstance(network);
+
+let senderKey: PrivateKey;
+let sender: PublicKey;
+let localData: any;
+let zkCoordinatorAddress: PublicKey;
+let zkResponseAddress: PublicKey;
+
+  // Fee payer setup
+  if (useCustomLocalNetwork){
+    localData = fsextra.readJsonSync('./data/addresses.json');
+    let deployerKey;
+    if (!!localData){
+      if (!!localData.deployerKey){
+        deployerKey = PrivateKey.fromBase58(localData.deployerKey)
+      }else{
+        deployerKey = (await Lightnet.acquireKeyPair()).privateKey
+      }
+    }
+    senderKey = deployerKey!;
+    sender = senderKey.toPublicKey();
+
+    zkCoordinatorAddress = localData.coordinatorAddress ? PublicKey.fromBase58(localData.coordinatorAddress) : (await Lightnet.acquireKeyPair()).publicKey;    
+    zkResponseAddress = localData.zkResponseAddress ? PublicKey.fromBase58(localData.zkResponseAddress) : (await Lightnet.acquireKeyPair()).publicKey;    
+    try {
+      await fetchAccount({ publicKey: sender })
+    } catch (error) {
+      senderKey = (await Lightnet.acquireKeyPair()).privateKey
+      sender = senderKey.toPublicKey();
+    }
+  }else{
+    //ToDo: the env object in this project is of a defined type. Modify. 
+    senderKey = PrivateKey.fromBase58(process.env.DEPLOYER_KEY);
+    sender = senderKey.toPublicKey();
+  }
 
 const main = async () => {
     while(true) {
@@ -110,6 +158,18 @@ const main = async () => {
             class Bytes13 extends Bytes(13){}
             let hash_timestamp = Hash.SHA2_256.hash(Bytes13.fromString(api_timestamp));
 
+            const apiData = new ApiResponseData({
+                lastUpdatedAt:Field(jsonObject['data']['lastUpdatedAt']),
+                availableSupply:Field(jsonObject['data']['availableSupply']),
+                circulatingSupply:Field(jsonObject['data']['circulatingSupply']),
+                totalSupply:Field(jsonObject['data']['totalSupply'])
+            })
+
+            const apiResponse = new ApiResponse({
+                data: apiData,
+                timestamp:Field(jsonObject['timestamp'])
+            });
+
             // Construct decommitment
             const decommitment = new Commitments ({
                 availableSupply: Field(BigInt(`0x${hash_supply.toHex()}`)),
@@ -121,7 +181,6 @@ const main = async () => {
                 availableSupply: Field(BigInt(`0x${API_RES["F1"]}`)),
                 timestamp: Field(BigInt(`0x${API_RES["F2"]}`))
             });
-
 
             const eGrains = ZkProgram({
                 name:'egrains-proof',
@@ -161,10 +220,57 @@ const main = async () => {
                 commitment, 
                 Field(BigInt(`0x${CM}`)), 
                 D);
-
+            
+            const json_proof = proof.toJSON();
             const ok = await verify(proof.toJSON(), eGrainszkP.verificationKey);
             console.timeEnd('Execution of Request to TLSN Client & Proof Generation')
+
             //Send the transaction to the zkApp 
+            await ZkonResponse.compile();
+            console.log('Compiled');
+            const zkResponse = new ZkonResponse(zkResponseAddress);
+            console.log('');
+
+
+            // Send request via zkRequest app
+            console.log(`Sending request via zkRequest at ${zkResponseAddress.toBase58()}`);  
+            let transaction = await Mina.transaction(
+                { sender, fee: transactionFee },
+                async () => {
+                await zkResponse.sendRequest(proof, apiResponse);
+                }
+            );
+            console.log('Generating proof');
+            await transaction.prove()
+            console.log('Proof generated');
+            
+            console.log('Signing');
+            transaction.sign([senderKey]);
+            console.log('');
+            console.log(`Sending the transaction for deploying zkRequest to: ${zkResponseAddress.toBase58()}`);
+            let pendingTx = await transaction.send();
+            if (pendingTx.status === 'pending') {
+                console.log(`Success! Deploy transaction sent.
+            Your smart contract will be deployed
+            as soon as the transaction is included in a block.
+            Txn hash: ${pendingTx.hash}
+            Block explorer hash: https://minascan.io/devnet/tx/${pendingTx.hash}`);
+            }
+            console.log('Waiting for transaction inclusion in a block.');
+            await pendingTx.wait({ maxAttempts: 90 });
+            if (useCustomLocalNetwork){
+                localData.deployerKey = localData.deployerKey ? localData.deployerKey : senderKey.toBase58();
+                localData.deployerAddress = localData.deployerAddress ? localData.deployerAddress : sender;
+                localData.zkResponse = zkResponse.toBase58();
+                localData.zkResponseAddress = zkResponseAddress;
+                fsextra.outputJsonSync(
+                "./data/addresses.json",            
+                    localData,      
+                { spaces: 2 }
+                );
+            }
+            console.log('');
+
         //}
         await sleep(30000); //30 seconds
     }

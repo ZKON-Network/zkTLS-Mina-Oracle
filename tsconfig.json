@@ -1,12 +1,25 @@
 {
-    "compilerOptions": {
-      "target": "ES2022",   // Set the target JavaScript version (adjust if needed)
-      "module": "commonjs", // Module system (commonjs for Node.js)
-      "outDir": "dist",    // Output compiled JavaScript directory
-      "strict": true,      // Enable strict type checking
-      "esModuleInterop": true, // Allow usage of modern ES modules
-      "experimentalDecorators": true
-    },
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "es2022",
+    "lib": ["dom", "esnext"],
+    "outDir": "./build",
+    "rootDir": ".",
+    "strict": true,
+    "strictPropertyInitialization": false, // to enable generic constructors, e.g. on CircuitValue
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "allowJs": true,
+    "declaration": true,
+    "sourceMap": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "useDefineForClassFields": false,
+  },
     "include": ["src/index.ts"], // Include source files from the "src" directory
     "typeRoots": ["./global.d.ts", "./node_modules/@types"]
   }

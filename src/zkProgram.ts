@@ -20,7 +20,7 @@ const sig = p256.Signature.fromCompact('5DC98BBDADE4AF02EEC7879FB9E5DCB5390CFB86
 const value = '8af6b1b64bc2c65ff949d399771644d1b6028960ac2c984d3dfedf71c3d1a74045c542e41a9ec2adb453f22e98daf6401a82da38d48a09f802469e68cb7eab4e0001000000000000c00300000000000008c483660000000000410490549464638efbb830fc02fc54033ffe74f47989e97624632fa1229ded322bc174c1071ee60c9c4083ba91844f5bdc342c6d40a56cb808a1296c8a22eb6d46a3ead56387d4a223ccf594f7610ac214adcad5d71e22c39d8be63b4c4b3098240c'
 const msgByteArray = hexToBytes(value)
 
-const eGrainsZkProgram = ZkProgram({
+const ZkonZkProgram = ZkProgram({
     name:'egrains-proof',
     publicInput: Commitments,
 
@@ -52,4 +52,4 @@ const eGrainsZkProgram = ZkProgram({
     }
 });
 
-export {eGrainsZkProgram};
+export {ZkonZkProgram};

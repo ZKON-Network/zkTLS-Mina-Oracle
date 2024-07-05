@@ -1,5 +1,5 @@
 import { SmartContract, PublicKey, state, State, method, Field, DeployArgs, Struct, Proof } from 'o1js';
-import {ZkonRequestCoordinator} from './ZkonRequestCoordinator.js';
+import {ZkonRequestCoordinator} from './ZkonResponseCoordinator.js';
 
 export interface AppDeployProps extends Exclude<DeployArgs, undefined> {
   coordinator: PublicKey  
@@ -15,20 +15,13 @@ class Commitments extends Struct({
 
 //ToDo: String might not work. Replace with circuit string.
 class ApiResponseData extends Struct({
-  symbol: String,
-  name: String,
-  website: String,
-  twitter: String,
   lastUpdatedAt:Field,
   availableSupply:Field,
   circulatingSupply:Field,
   totalSupply:Field,
-  networks:[String, String, String],
-  icon: String
 }){}
 
 class ApiResponse extends Struct ({
-  status: String,
   data: ApiResponseData,
   timestamp: Field
 }){}

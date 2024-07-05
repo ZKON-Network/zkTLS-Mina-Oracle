@@ -41,7 +41,7 @@
     "https": "^1.0.0",
     "js-sha256": "^0.11.0",
     "o1js": "^0.18.0",
-    "typescript": "^5.4.5",
+    "typescript": "^5.4.3",
     "zkapp-cli": "^0.21.5",
     "mina-signer": "^3.0.5"
   },
