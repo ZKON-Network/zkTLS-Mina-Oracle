@@ -7,7 +7,8 @@
     "start": "ts-node src/index.ts",
     "build": "tsc",
     "serve": "node dist/index.js",
-    "watch": "npx nodemon --watch src/index.ts --ext ts,json --ignore src/**/*.spec.ts --exec ts-node src/index.ts"
+    "watch": "npx nodemon --watch src/index.ts --ext ts,json --ignore src/**/*.spec.ts --exec ts-node src/index.ts",
+    "prepare": "node build-mina-fungible-token.js && cd node_modules/mina-fungible-token && npm run build"
   },
   "keywords": [],
   "author": "",
@@ -40,10 +41,12 @@
     "hash-wasm": "^4.11.0",
     "https": "^1.0.0",
     "js-sha256": "^0.11.0",
-    "o1js": "^0.18.0",
+    "o1js": "^1.2.0",
     "typescript": "^5.4.3",
     "zkapp-cli": "^0.21.5",
-    "mina-signer": "^3.0.5"
+    "mina-signer": "^3.0.5",
+    "mina-fungible-token": "git+https://github.com/MinaFoundation/mina-fungible-token.git#971bf58962d47870d5bcf5a220dc3a80ca5321a0",
+    "zkon-zkapp": "git://github.com/ZKON-Network/zkapp.git#e2e-final-flow"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",

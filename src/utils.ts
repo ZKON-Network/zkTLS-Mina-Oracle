@@ -1,5 +1,3 @@
-import { Mina, PublicKey, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct, Provable} from 'o1js';
-
 export function numToUint8Array(num:any) {
     let arr = new Uint8Array(8);
   
@@ -25,12 +23,4 @@ export function concatenateUint8Arrays(jsonData:any) {
         offset += arr.length;
     });
     return combinedArray;
-}
-
-export class Commitments extends Struct({
-    availableSupply: Field, timestamp: Field
-  }){
-    constructor(value:{availableSupply: Field, timestamp: Field}){
-      super(value)
-    }
 }
