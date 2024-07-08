@@ -10,9 +10,8 @@ Disable the SSL Check agent before actual production use.
 
 # ToDo
 
-- [ ] Check how to get last block number. Removed UInt32 parsing to resolve type mismatch. 
-- [ ] Resolve Mina.fetchEvents() with actual tokenId field.
-- [ ] Fetch JSON from IPSF seems unresponsive. Investigate.
-- [ ] Add TLSN Client URL in .env file. 
-- [ ] Send the transaction to the callbackFunction
-- [ ] Adjust sleep( seconds*1000 ) value accordingly. 
+- [ ] Change the TLSNotary-Cleint Endpoint.
+- [ ] Accomodate zkProgram changes
+- [ ] Fix the commiment scheme, to make a uniform proof irrespective of data-source Endpoint.
+- [ ] Change TLSNotary Client to accomodate generic data-source URLs. 
+- [ ] Use RequestObject to handle the axios requests.
