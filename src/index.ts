@@ -1,12 +1,16 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct} from 'o1js';
 import { p256 } from '@noble/curves/p256';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 
 import config from './config';
 import {numToUint8Array, concatenateUint8Arrays } from './utils';
-import { ZkonZkProgram, Commitments } from 'zkon-zkapp';
+//import { ZkonZkProgram } from 'zkon-zkapp';
+
+//Using for testing.
+import {ZkonZkProgramTest, P256Data} from './zkProgram';
 
 const Verifier = require("../verifier/index.node");
 
@@ -35,8 +39,8 @@ const network = Mina.Network({
 });
 Mina.setActiveInstance(network);
 
-const senderKey = PrivateKey.fromBase58(process.env.MINA_PRIVATE_KEY!);
-const sender = senderKey.toPublicKey();
+// const senderKey = PrivateKey.fromBase58(process.env.MINA_PRIVATE_KEY!);
+// const sender = senderKey.toPublicKey();
 
 const main = async () => {
     while(true) {
@@ -51,12 +55,12 @@ const main = async () => {
         const fromBlock = blockNr;
         const toBlock = (blockNr >= config.MAX_BLOCKS_TO_CHECK) ? (blockNr) - config.MAX_BLOCKS_TO_CHECK: 0;
 
-        const address:any = config.MINA_ADDRESS;
-        const logs = await Mina.fetchEvents(
-            PublicKey.fromBase58(address),
-            Field(0), //ToDo: Resolve with actual tokenID
-            );
-        console.log('Events found: ', logs.length);
+        // const address:any = config.MINA_ADDRESS;
+        // const logs = await Mina.fetchEvents(
+        //     PublicKey.fromBase58(address),
+        //     Field(0), //ToDo: Resolve with actual tokenID
+        //     );
+        // console.log('Events found: ', logs.length);
         
         // for (const log of logs) {
             // const requestEvent = provablePure(log.event.data).toFields(log.event.data);
@@ -71,21 +75,28 @@ const main = async () => {
 
             // //Fetch JSON from IPFS            
             //const requestObjetct = (await axios.get(`${sanitizedConfig.IPFS_GATEWAY}${ipfsHashFile}`)).data;
-            const requestObjetct = {
+            // const requestObjetct = {
+            //   method: 'GET',
+            //   baseURL: 'https://api.coingecko.com/api/v3/coins/bitcoin',
+            //   path: 'market_data,current_price,usd',
+            //   zkapp: ''
+            // }
+
+            //Egrains demo specific.
+            const requestObjetctDemo = {
               method: 'GET',
-              baseURL: 'https://api.coingecko.com/api/v3/coins/bitcoin',
-              path: 'market_data,current_price,usd',
+              baseURL: 'r-api.e-grains.com',
+              path: 'v1/esoy/info',
               zkapp: ''
             }
-
+            
             // Make the request to TLS-Notary client to fetch NotaryProof. 
             console.time('Execution of Request to TLSN Client & Proof Generation');
-            
+
             // ToDo: Endpoint shouldn't be named egrains
             // ToDo: Send the URL and the request type (POST, GET, etc) from the request object
-            const res = (await axios.post('https://127.0.0.1:5000/egrains',{}, { httpsAgent: agent })).data;
-            const {notary_proof,CM,API_RES} = res;
-            
+            const res = (await axios.post('https://127.0.0.1:5000/proof',requestObjetctDemo, { httpsAgent: agent })).data;
+            const {notary_proof,CM} = res;
             const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
             let recieved = result['recv'];
             let jsonData = recieved.substring(recieved.indexOf('{'), (recieved.lastIndexOf('}')+1));
@@ -108,46 +119,32 @@ const main = async () => {
             // ToDO: This isn't used. It should be send to the zkProgram?
             const msgByteArray = concatenateUint8Arrays(message); //
             const sig = p256.Signature.fromCompact(notary_proof["session"]["signature"]["P256"])
-              
+            
             //Construct decommitment from the verified authentic API response.
-            class Bytes500 extends Bytes(408) {}
-            let preimageBytes = Bytes500.fromString(API_Recv_Dat);
+            class BytesAPI extends Bytes(API_Recv_Dat.length) {}
+            let preimageBytes = BytesAPI.fromString(API_Recv_Dat);
             let hash = Hash.SHA2_256.hash(preimageBytes);
             const D = Field(BigInt(`0x${hash.toHex()}`));
 
-            // Decommitment from verified API Response.
             let rawData = jsonObject;
-            if (requestObjetct.path){
-                const path = requestObjetct.path.split(',');
+            if (requestObjetctDemo.path){
+                const path = requestObjetctDemo.path.split(',');
                 for (const element of path) {
                     rawData = rawData[element];
                 }
             }
-            class Bytes7 extends Bytes(7){}
-            const hash_response = Hash.SHA2_256.hash(Bytes7.fromString(JSON.stringify(rawData)));
-            const api_timestamp:string = parseInt((Date.now() / 1000).toString()).toString();
-            class Bytes13 extends Bytes(13){}
-            const hash_timestamp = Hash.SHA2_256.hash(Bytes13.fromString(api_timestamp));
 
-            // Construct decommitment
-            const decommitment = new Commitments ({
-                response: Field(BigInt(`0x${hash_response.toHex()}`)),
-                timestamp: Field(BigInt(`0x${hash_timestamp.toHex()}`))
-            })
-            
-            // Parse the sent commitment
-            const commitment = new Commitments({
-              response: Field(BigInt(`0x${API_RES["F1"]}`)),
-                timestamp: Field(BigInt(`0x${API_RES["F2"]}`))
+            console.log(rawData);
+            const p256data = new P256Data({
+              signature: notary_proof["session"]["signature"]["P256"],
+              messageHex: bytesToHex(msgByteArray)
             });
-
             
-            const zkonzkP = await ZkonZkProgram.compile();
-            const proof = await ZkonZkProgram.verifySource(
-              decommitment, 
-              commitment, 
-              Field(BigInt(`0x${CM}`)), 
-              D
+            const zkonzkP = await ZkonZkProgramTest.compile();
+            const proof = await ZkonZkProgramTest.verifySource(
+              Field(BigInt(`0x${CM}`)),
+              D,
+              p256data
             );
             
             await verify(proof.toJSON(), zkonzkP.verificationKey);
