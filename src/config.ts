@@ -8,6 +8,7 @@ interface ENV {
     MAX_BLOCKS_TO_CHECK: number| undefined;
     PRIVATE_KEY: string| undefined;
     IPFS_GATEWAY: string| undefined;
+    USE_CUSTOM_LOCAL_NETWORK:string| undefined;
 }
 
 interface Config {
@@ -17,6 +18,7 @@ interface Config {
     MAX_BLOCKS_TO_CHECK: number;
     PRIVATE_KEY: string;
     IPFS_GATEWAY: string;
+    USE_CUSTOM_LOCAL_NETWORK:string;
 }
 
 const getConfig = (): ENV => {
@@ -26,7 +28,8 @@ const getConfig = (): ENV => {
         NODE_URI: process.env.NODE_URI,
         MAX_BLOCKS_TO_CHECK: process.env.MAX_BLOCKS_TO_CHECK? Number(process.env.MAX_BLOCKS_TO_CHECK) : undefined,
         PRIVATE_KEY:process.env.PRIVATE_KEY,
-        IPFS_GATEWAY: process.env.IPFS_GATEWAY
+        IPFS_GATEWAY: process.env.IPFS_GATEWAY,
+        USE_CUSTOM_LOCAL_NETWORK: process.env.USE_CUSTOM_LOCAL_NETWORK
     };
   };
   

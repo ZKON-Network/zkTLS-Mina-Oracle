@@ -5,15 +5,13 @@ import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String';
-
+import {numToUint8Array,concatenateUint8Arrays} from './utils';
 import config from './config';
 
 //import { ZkonZkProgram } from 'zkon-zkapp';
+import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
 
-//Using for testing.
-import {ZkonZkProgramTest, P256Data} from './zkProgram';
-
-// const Verifier = require("../verifier/index.node");
+const Verifier = require("../verifier/index.node");
 
 // SSL Check disabled.
 const agent = new https.Agent({
@@ -55,7 +53,7 @@ const main = async () => {
         });
         Mina.setActiveInstance(Network);        
 
-        const blockNr = 0 //ToDo Check how to get last block number
+        const blockNr = 0 //ToDo: Check how to get last block number
         const fromBlock = blockNr;
         const toBlock = (blockNr >= config.MAX_BLOCKS_TO_CHECK) ? (blockNr) - config.MAX_BLOCKS_TO_CHECK: 0;
 
@@ -71,34 +69,31 @@ const main = async () => {
             const hash2 = StringCircuitValue.fromField(fieldHash2).toString().replace(/\0/g, '')
         
             const ipfsHashFile = hash1.concat(hash2);
-            console.log(ipfsHashFile);
             //const ipfsHashFile = "QmbCpnprEGiPZfESXkbXmcXcBEt96TZMpYAxsoEFQNxoEV"; //Mock JSON Request
-
-            // //Fetch JSON from IPFS            
-            //const requestObjetct = (await axios.get(`${sanitizedConfig.IPFS_GATEWAY}${ipfsHashFile}`)).data;
-            // const requestObjetct = {
-            //   method: 'GET',
-            //   baseURL: 'https://api.coingecko.com/api/v3/coins/bitcoin',
-            //   path: 'market_data,current_price,usd',
-            //   zkapp: ''
-            // }
-
-            //Egrains demo specific.
-            const requestObjetctDemo = {
-              method: 'GET',
-              baseURL: 'r-api.e-grains.com',
-              path: 'v1/esoy/info',
-              zkapp: ''
-            }
+            //Fetch JSON from IPFS            
+            let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
+            console.log(requestObjetct.zkapp);
             
-            // Make the request to TLS-Notary client to fetch NotaryProof. 
-            console.time('Execution of Request to TLSN Client & Proof Generation');
+            requestObjetct.path = 'data,circulatingSupply';
+            const proofObject ={
+                method: 'GET',
+                baseURL: 'r-api.e-grains.com',
+                path: 'v1/esoy/info'
+            }
 
-            // ToDo: Endpoint shouldn't be named egrains
-            // ToDo: Send the URL and the request type (POST, GET, etc) from the request object
-            const res = (await axios.post('https://127.0.0.1:5000/proof',requestObjetctDemo, { httpsAgent: agent })).data;
+            /* Suggestion: Can we structure the IPFS as follows? 
+            IPFS={
+                method: ...,
+                baseURL: api.coingecko.com
+                apiEndpoitn: /api/v3/coins/bitcoin
+                zkapp: 
+            }
+            */
+            
+            console.time('Execution of Request to TLSN Client & Proof Generation');
+            const res = (await axios.post('https://127.0.0.1:5000/proof',proofObject, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
-            /* const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
+            const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
             let recieved = result['recv'];
             let jsonData = recieved.substring(recieved.indexOf('{'), (recieved.lastIndexOf('}')+1));
             let cleanedJsonString = jsonData.replace(/\\n/g, '').replace(/\\"/g, '"');
@@ -117,9 +112,7 @@ const main = async () => {
                 "handshake_commitment":json_notary["handshake_summary"]["handshake_commitment"]
               };
 
-            // ToDO: This isn't used. It should be send to the zkProgram?
-            const msgByteArray = concatenateUint8Arrays(message); //
-            const sig = p256.Signature.fromCompact(notary_proof["session"]["signature"]["P256"])
+            const msgByteArray = concatenateUint8Arrays(message);
             
             //Construct decommitment from the verified authentic API response.
             class BytesAPI extends Bytes(API_Recv_Dat.length) {}
@@ -128,22 +121,26 @@ const main = async () => {
             const D = Field(BigInt(`0x${hash.toHex()}`));
 
             let rawData = jsonObject;
-            if (requestObjetctDemo.path){
-                const path = requestObjetctDemo.path.split(',');
+            if (requestObjetct.path){
+                const path = requestObjetct.path.split(',');
                 for (const element of path) {
                     rawData = rawData[element];
                 }
             }
 
-            console.log(rawData);
             const p256data = new P256Data({
               signature: notary_proof["session"]["signature"]["P256"],
               messageHex: bytesToHex(msgByteArray)
             });
-            
+
+            const publicArguments = new PublicArgumets({
+                commitment: Field(BigInt(`0x${CM}`)),
+                dataField: Field(rawData)
+            })
+
             const zkonzkP = await ZkonZkProgramTest.compile();
             const proof = await ZkonZkProgramTest.verifySource(
-              Field(BigInt(`0x${CM}`)),
+              publicArguments,
               D,
               p256data
             );
@@ -151,13 +148,14 @@ const main = async () => {
             await verify(proof.toJSON(), zkonzkP.verificationKey);
             console.timeEnd('Execution of Request to TLSN Client & Proof Generation')
 
+            console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
             //Send the transaction to the zkApp 
 
             // ToDO: Download zkapp from ipfs and execute it:
             /*
-            await ZkonResponse.compile();
+            await requestObjetct.zkapp.compile();
             console.log('Compiled');
-            const zkResponse = new ZkonResponse(zkResponseAddress);
+            const zkRequest = new requestObjetct.zkapp(zkResponseAddress);
             console.log('');
 
 
@@ -166,7 +164,7 @@ const main = async () => {
             let transaction = await Mina.transaction(
                 { sender, fee: transactionFee },
                 async () => {
-                await zkResponse.sendRequest(proof, apiResponse);
+                await zkRequest.receiveZkonResponse(proof, jsonObject);
                 }
             );
             console.log('Generating proof');
@@ -198,7 +196,7 @@ const main = async () => {
                 { spaces: 2 }
                 );
             }
-            console.log('');*/
+        console.log('');*/
 
         }
         await sleep(30000); //30 seconds

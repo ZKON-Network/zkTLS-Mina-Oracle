@@ -57,3 +57,4 @@ What happens inside the Oracle post recieving this response?
 - [x] Accomodate zkProgram changes
 - [x] Fix the commiment scheme, to make a uniform proof irrespective of data-source Endpoint.
 - [x] Change TLSNotary Client to accomodate generic data-source URLs. 
+- [ ] Use zkapp from IPFS & send back the event. 

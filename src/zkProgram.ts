@@ -4,9 +4,14 @@ import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 
 //Only kept here for development purpose. Please read from zkon-zkapp repo in prod.
 
-export class P256Data extends Struct({
+class P256Data extends Struct({
   signature: String,
   messageHex: String
+}){}
+
+class PublicArgumets extends Struct({
+  commitment: Field,
+  dataField:Field
 }){}
 
 const checkECDSA =(message:string, signature:string): Bool=>{
@@ -22,13 +27,13 @@ const checkECDSA =(message:string, signature:string): Bool=>{
 
 const ZkonZkProgramTest = ZkProgram({
   name:'egrains-proof',
-  publicInput: Field,
+  publicInput: PublicArgumets,
 
   methods:{
     verifySource:{
       privateInputs: [Field, P256Data], 
       async method (
-        commitment: Field,
+        commitment: PublicArgumets,
         decommitment: Field,
         p256_data: P256Data
       ){
@@ -42,10 +47,10 @@ const ZkonZkProgramTest = ZkProgram({
           
           // Check if the SH256 Hash commitment of the data-source is same 
           // as the response reconstructed from the notary-proof file.
-          decommitment.assertEquals(commitment);
+          decommitment.assertEquals(commitment.commitment);
       }
     }
   }
 });
 
-export {ZkonZkProgramTest};
+export {ZkonZkProgramTest, P256Data, PublicArgumets};
