@@ -1,18 +1,19 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct, provablePure, fetchEvents} from 'o1js';
 import { p256 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
+import { StringCircuitValue } from './String';
 
 import config from './config';
-import {numToUint8Array, concatenateUint8Arrays } from './utils';
+
 //import { ZkonZkProgram } from 'zkon-zkapp';
 
 //Using for testing.
 import {ZkonZkProgramTest, P256Data} from './zkProgram';
 
-const Verifier = require("../verifier/index.node");
+// const Verifier = require("../verifier/index.node");
 
 // SSL Check disabled.
 const agent = new https.Agent({
@@ -29,6 +30,9 @@ const pemData = fs.readFileSync('./notary.pub', 'utf-8');
 
 const transactionFee = 100_000_000;
 const useCustomLocalNetwork = process.env.USE_CUSTOM_LOCAL_NETWORK === 'true';  
+console.log(useCustomLocalNetwork
+    ? 'http://localhost:8080/graphql'
+    : 'https://api.minascan.io/node/devnet/v1/graphql');
 const network = Mina.Network({
   mina: useCustomLocalNetwork
     ? 'http://localhost:8080/graphql'
@@ -55,22 +59,19 @@ const main = async () => {
         const fromBlock = blockNr;
         const toBlock = (blockNr >= config.MAX_BLOCKS_TO_CHECK) ? (blockNr) - config.MAX_BLOCKS_TO_CHECK: 0;
 
-        // const address:any = config.MINA_ADDRESS;
-        // const logs = await Mina.fetchEvents(
-        //     PublicKey.fromBase58(address),
-        //     Field(0), //ToDo: Resolve with actual tokenID
-        //     );
-        // console.log('Events found: ', logs.length);
+        const address:any = config.MINA_ADDRESS;
+        const logs = await fetchEvents({
+            publicKey: address,
+          });
+        console.log('Events found: ', logs.length);
+        for (const log of logs) {
+            const fieldHash1 = Field(log.events[0].data[2]);
+            const fieldHash2 = Field(log.events[0].data[3]);
+            const hash1 = StringCircuitValue.fromField(fieldHash1).toString().replace(/\0/g, '')
+            const hash2 = StringCircuitValue.fromField(fieldHash2).toString().replace(/\0/g, '')
         
-        // for (const log of logs) {
-            // const requestEvent = provablePure(log.event.data).toFields(log.event.data);
-            // const fieldHash1 = requestEvent[1]
-            // const fieldHash2 = requestEvent[2]
-
-            // const hash1 = StringCircuitValue.fromBits(fieldHash1.toBits()).toString().replace(/\0/g, '')
-            // const hash2 = StringCircuitValue.fromBits(fieldHash2.toBits()).toString().replace(/\0/g, '')
-        
-            // const ipfsHashFile = hash1.concat(hash2);
+            const ipfsHashFile = hash1.concat(hash2);
+            console.log(ipfsHashFile);
             //const ipfsHashFile = "QmbCpnprEGiPZfESXkbXmcXcBEt96TZMpYAxsoEFQNxoEV"; //Mock JSON Request
 
             // //Fetch JSON from IPFS            
@@ -97,7 +98,7 @@ const main = async () => {
             // ToDo: Send the URL and the request type (POST, GET, etc) from the request object
             const res = (await axios.post('https://127.0.0.1:5000/proof',requestObjetctDemo, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
-            const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
+            /* const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
             let recieved = result['recv'];
             let jsonData = recieved.substring(recieved.indexOf('{'), (recieved.lastIndexOf('}')+1));
             let cleanedJsonString = jsonData.replace(/\\n/g, '').replace(/\\"/g, '"');
@@ -199,7 +200,7 @@ const main = async () => {
             }
             console.log('');*/
 
-        //}
+        }
         await sleep(30000); //30 seconds
     }
 }
