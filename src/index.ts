@@ -8,8 +8,8 @@ import { StringCircuitValue } from './String';
 import {numToUint8Array,concatenateUint8Arrays} from './utils';
 import config from './config';
 
-//import { ZkonZkProgram } from 'zkon-zkapp';
-import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
+import { ZkonZkProgram,P256Data, PublicArgumets } from 'zkon-zkapp';
+//import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
 
 const Verifier = require("../verifier/index.node");
 
@@ -74,7 +74,7 @@ const main = async () => {
             let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
             console.log(requestObjetct.zkapp);
             
-            requestObjetct.path = 'data,circulatingSupply';
+            requestObjetct.path = 'data,circulatingSupply'; //Change to eGrains specific for demo. 
             const proofObject ={
                 method: 'GET',
                 baseURL: 'r-api.e-grains.com',
@@ -152,15 +152,20 @@ const main = async () => {
             //Send the transaction to the zkApp 
 
             // ToDO: Download zkapp from ipfs and execute it:
-            /*
+
+            senderKey = PrivateKey.fromBase58(process.env.DEPLOYER_KEY);
+            sender = senderKey.toPublicKey();
+
+            zkRequestAddress = PublicKey.fromBase58(localData.zkRequest)
+            
             await requestObjetct.zkapp.compile();
             console.log('Compiled');
-            const zkRequest = new requestObjetct.zkapp(zkResponseAddress);
+            const zkRequest = new requestObjetct.zkapp(zkRequestAddress);
             console.log('');
 
 
             // Send request via zkRequest app
-            console.log(`Sending request via zkRequest at ${zkResponseAddress.toBase58()}`);  
+            console.log(`Sending request via zkRequest at ${zkRequestAddress.toBase58()}`);  
             let transaction = await Mina.transaction(
                 { sender, fee: transactionFee },
                 async () => {
@@ -174,7 +179,7 @@ const main = async () => {
             console.log('Signing');
             transaction.sign([senderKey]);
             console.log('');
-            console.log(`Sending the transaction for deploying zkRequest to: ${zkResponseAddress.toBase58()}`);
+            console.log(`Sending the transaction for deploying zkRequest to: ${zkRequestAddress.toBase58()}`);
             let pendingTx = await transaction.send();
             if (pendingTx.status === 'pending') {
                 console.log(`Success! Deploy transaction sent.
@@ -196,7 +201,7 @@ const main = async () => {
                 { spaces: 2 }
                 );
             }
-        console.log('');*/
+        console.log('');
 
         }
         await sleep(30000); //30 seconds

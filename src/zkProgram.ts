@@ -26,7 +26,7 @@ const checkECDSA =(message:string, signature:string): Bool=>{
 }
 
 const ZkonZkProgramTest = ZkProgram({
-  name:'egrains-proof',
+  name:'zkon-proof',
   publicInput: PublicArgumets,
 
   methods:{
