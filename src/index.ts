@@ -1,4 +1,4 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct, provablePure, fetchEvents} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct, provablePure, fetchEvents, AccountUpdate, fetchAccount} from 'o1js';
 import { p256 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
@@ -10,7 +10,7 @@ import * as path from 'path'
 import config from './config.js';
 
 //import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
-import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
+import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram.js';
 
 import { createRequire } from "node:module"
 const Verifier = createRequire(import.meta.url)("../verifier/index.node")
@@ -45,6 +45,22 @@ Mina.setActiveInstance(network);
 
 // const senderKey = PrivateKey.fromBase58(process.env.MINA_PRIVATE_KEY!);
 // const sender = senderKey.toPublicKey();
+
+const getZkAppInstance = async (filePath: string) => {
+    try {
+        // const zkApp = await import(path.resolve(filePath));
+        const require = createRequire(import.meta.url);
+        (global as any).self = global;
+        const zkApp = require('../bundle.cjs');
+        if (zkApp && typeof zkApp.default === 'function') {
+            return zkApp.default;
+        } else {
+            throw new Error('The zkApp does not export a default function.');
+        }
+    } catch (error) {
+        throw new Error(`Error executing zkApp: ${(error as any).message}`);
+    }
+}
 
 const main = async () => {
     while(true) {
@@ -84,11 +100,32 @@ const main = async () => {
 
             let zkAppCode = requestObjetct.zkapp;
             try{
-                const wrappedCode = `(async () => { ${zkAppCode} })()`;
-                eval(wrappedCode);
+
+                const dir = '/tmp/zkon-zkapps';
+                const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
+                if (!fs.existsSync(dir)){
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                fs.writeFileSync(dir + '/' + filename, zkAppCode);
+                const zkapp = await getZkAppInstance(dir+'/'+filename);
+                await fetchAccount({publicKey: config.MINA_ADDRESS});
+                await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
+                const zkappInstance = new zkapp(config.ZK_REQUESTS_ADDRESS);
+                // console.log(zkappInstance)
+                // console.log(zkapp);
+                let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
+                let sender = senderKey.toPublicKey();
+
+                const proof = null; // ToDO 
+                let transaction = await Mina.transaction(
+                    { sender , fee: transactionFee },
+                    async () => {
+                      await zkappInstance.receiveZkonResponse(Field(1), proof);
+                    }
+                  );
             }catch(err){
-                console.error("Error happened in Eval:\n", err);
-            };
+                console.error(err);
+            }
 
             /* Suggestion: Can we structure the IPFS as follows? 
             IPFS={
@@ -214,7 +251,7 @@ const main = async () => {
         console.log('');
         */
         }
-        await sleep(5000); //30 seconds
+        await sleep(30000); //30 seconds
     }
 }
 
