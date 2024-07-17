@@ -4,10 +4,10 @@ import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
-import { StringCircuitValue } from './String';
-import {numToUint8Array,concatenateUint8Arrays} from './utils';
+import { StringCircuitValue } from './String.js';
+import {numToUint8Array,concatenateUint8Arrays} from './utils.js';
 import * as path from 'path'
-import config from './config';
+import config from './config.js';
 
 //import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
 import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';

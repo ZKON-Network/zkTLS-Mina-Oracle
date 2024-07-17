@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "build": "tsc",
-    "serve": "node dist/index.js",
+    "build": "tsc && cp -r verifier build/",
+    "serve": "node build/src/index.js",
     "watch": "npx nodemon --watch src/index.ts --ext ts,json --ignore src/**/*.spec.ts --exec ts-node src/index.ts",
     "prepare": "node build-mina-fungible-token.js && cd node_modules/mina-fungible-token && npm run build"
   },
