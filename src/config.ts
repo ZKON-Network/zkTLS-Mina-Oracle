@@ -1,4 +1,15 @@
 import * as dotenv from 'dotenv';
+
+delete process.env.CONTRACT_ADDRESS;
+delete process.env.MINA_ADDRESS;
+delete process.env.NODE_URI;
+delete process.env.MAX_BLOCKS_TO_CHECK;
+delete process.env.PRIVATE_KEY;
+delete process.env.IPFS_GATEWAY;
+delete process.env.USE_CUSTOM_LOCAL_NETWORK;
+delete process.env.MINA_PRIVATE_KEY;
+delete process.env.ZK_REQUESTS_ADDRESS;
+
 dotenv.config();
 
 interface ENV {
@@ -9,6 +20,8 @@ interface ENV {
     PRIVATE_KEY: string| undefined;
     IPFS_GATEWAY: string| undefined;
     USE_CUSTOM_LOCAL_NETWORK:string| undefined;
+    MINA_PRIVATE_KEY: string| undefined;
+    ZK_REQUESTS_ADDRESS: string|undefined;
 }
 
 interface Config {
@@ -19,6 +32,8 @@ interface Config {
     PRIVATE_KEY: string;
     IPFS_GATEWAY: string;
     USE_CUSTOM_LOCAL_NETWORK:string;
+    MINA_PRIVATE_KEY: string;
+    ZK_REQUESTS_ADDRESS: string;
 }
 
 const getConfig = (): ENV => {
@@ -29,7 +44,9 @@ const getConfig = (): ENV => {
         MAX_BLOCKS_TO_CHECK: process.env.MAX_BLOCKS_TO_CHECK? Number(process.env.MAX_BLOCKS_TO_CHECK) : undefined,
         PRIVATE_KEY:process.env.PRIVATE_KEY,
         IPFS_GATEWAY: process.env.IPFS_GATEWAY,
-        USE_CUSTOM_LOCAL_NETWORK: process.env.USE_CUSTOM_LOCAL_NETWORK
+        USE_CUSTOM_LOCAL_NETWORK: process.env.USE_CUSTOM_LOCAL_NETWORK,
+        MINA_PRIVATE_KEY: process.env.MINA_PRIVATE_KEY,
+        ZK_REQUESTS_ADDRESS: process.env.ZK_REQUESTS_ADDRESS
     };
   };
   

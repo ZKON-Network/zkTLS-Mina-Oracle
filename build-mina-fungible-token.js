@@ -1,4 +1,4 @@
-const fs = require('fs');
+import * as fs from 'fs'
 const configFile = 'node_modules/mina-fungible-token/tsconfig.json';
 const content = JSON.parse(fs.readFileSync(configFile));
 delete content.compilerOptions.typeRoots;

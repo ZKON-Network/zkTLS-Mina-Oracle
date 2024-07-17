@@ -6,12 +6,14 @@ import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String';
 import {numToUint8Array,concatenateUint8Arrays} from './utils';
+import * as path from 'path'
 import config from './config';
 
-import { ZkonZkProgram,P256Data, PublicArgumets } from 'zkon-zkapp';
-//import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
+//import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
+import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
 
-const Verifier = require("../verifier/index.node");
+import { createRequire } from "node:module"
+const Verifier = createRequire(import.meta.url)("../verifier/index.node")
 
 // SSL Check disabled.
 const agent = new https.Agent({
@@ -58,6 +60,7 @@ const main = async () => {
         const toBlock = (blockNr >= config.MAX_BLOCKS_TO_CHECK) ? (blockNr) - config.MAX_BLOCKS_TO_CHECK: 0;
 
         const address:any = config.MINA_ADDRESS;
+        console.log(address);
         const logs = await fetchEvents({
             publicKey: address,
           });
@@ -72,14 +75,20 @@ const main = async () => {
             //const ipfsHashFile = "QmbCpnprEGiPZfESXkbXmcXcBEt96TZMpYAxsoEFQNxoEV"; //Mock JSON Request
             //Fetch JSON from IPFS            
             let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
-            console.log(requestObjetct.zkapp);
             
-            requestObjetct.path = 'data,circulatingSupply'; //Change to eGrains specific for demo. 
             const proofObject ={
                 method: 'GET',
                 baseURL: 'r-api.e-grains.com',
                 path: 'v1/esoy/info'
             }
+
+            let zkAppCode = requestObjetct.zkapp;
+            try{
+                const wrappedCode = `(async () => { ${zkAppCode} })()`;
+                eval(wrappedCode);
+            }catch(err){
+                console.error("Error happened in Eval:\n", err);
+            };
 
             /* Suggestion: Can we structure the IPFS as follows? 
             IPFS={
@@ -89,7 +98,7 @@ const main = async () => {
                 zkapp: 
             }
             */
-            
+            /*
             console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post('https://127.0.0.1:5000/proof',proofObject, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
@@ -152,15 +161,16 @@ const main = async () => {
             //Send the transaction to the zkApp 
 
             // ToDO: Download zkapp from ipfs and execute it:
-
-            senderKey = PrivateKey.fromBase58(process.env.DEPLOYER_KEY);
-            sender = senderKey.toPublicKey();
-
-            zkRequestAddress = PublicKey.fromBase58(localData.zkRequest)
             
-            await requestObjetct.zkapp.compile();
+            let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
+            let sender = senderKey.toPublicKey();
+
+            let zkRequestAddress = PublicKey.fromBase58(config.ZK_REQUESTS_ADDRESS);
+    
+            let zkApp = eval(requestObjetct.zkapp);
+            await zkApp.compile();
             console.log('Compiled');
-            const zkRequest = new requestObjetct.zkapp(zkRequestAddress);
+            const zkRequest = new zkApp(zkRequestAddress);
             console.log('');
 
 
@@ -169,7 +179,7 @@ const main = async () => {
             let transaction = await Mina.transaction(
                 { sender, fee: transactionFee },
                 async () => {
-                await zkRequest.receiveZkonResponse(proof, jsonObject);
+                await zkRequest.receiveZkonResponse(Field(1),proof);
                 }
             );
             console.log('Generating proof');
@@ -190,21 +200,21 @@ const main = async () => {
             }
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
-            if (useCustomLocalNetwork){
-                localData.deployerKey = localData.deployerKey ? localData.deployerKey : senderKey.toBase58();
-                localData.deployerAddress = localData.deployerAddress ? localData.deployerAddress : sender;
-                localData.zkResponse = zkResponse.toBase58();
-                localData.zkResponseAddress = zkResponseAddress;
-                fsextra.outputJsonSync(
-                "./data/addresses.json",            
-                    localData,      
-                { spaces: 2 }
-                );
-            }
+            // if (useCustomLocalNetwork){
+            //     localData.deployerKey = localData.deployerKey ? localData.deployerKey : senderKey.toBase58();
+            //     localData.deployerAddress = localData.deployerAddress ? localData.deployerAddress : sender;
+            //     localData.zkResponse = zkResponse.toBase58();
+            //     localData.zkResponseAddress = zkResponseAddress;
+            //     fsextra.outputJsonSync(
+            //     "./data/addresses.json",            
+            //         localData,      
+            //     { spaces: 2 }
+            //     );
+            // }
         console.log('');
-
+        */
         }
-        await sleep(30000); //30 seconds
+        await sleep(5000); //30 seconds
     }
 }
 
