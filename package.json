@@ -46,7 +46,6 @@
     "prettier": "^2.3.2",
     "ts-jest": "^28.0.8",
     "typescript": "^5.4.3",
-    "zkapp-cli": "^0.21.5",
     "zkon-zkapp": "git://github.com/ZKON-Network/zkapp.git#e2e-final-flow"
   },
   "devDependencies": {
