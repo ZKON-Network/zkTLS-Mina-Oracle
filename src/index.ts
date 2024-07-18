@@ -188,6 +188,8 @@ const main = async () => {
             })
 
             const zkonzkP = await ZkonZkProgramTest.compile();
+            console.log(rawData, CM, hash.toHex(), p256data);
+
             const proof = await ZkonZkProgramTest.verifySource(
               publicArguments,
               D,
@@ -208,10 +210,14 @@ const main = async () => {
             let zkRequestAddress = PublicKey.fromBase58(config.ZK_REQUESTS_ADDRESS);
     
             let zkApp = await getZkAppInstance(dir+'/zkonrequest.js');
-            await zkApp.compile();
+            // await zkApp.compile();
             console.log('Compiled');
+
+            await fetchAccount({publicKey: config.MINA_ADDRESS});
+            await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
+            console.log('Accounts fetched!');
             const zkRequest = new zkApp(zkRequestAddress);
-            console.log('');
+            console.log(await zkRequest.receiveZkonResponse(Field(1),proof));
 
 
             // Send request via zkRequest app
