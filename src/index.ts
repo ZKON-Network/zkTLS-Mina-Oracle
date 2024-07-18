@@ -48,10 +48,9 @@ Mina.setActiveInstance(network);
 
 const getZkAppInstance = async (filePath: string) => {
     try {
-        // const zkApp = await import(path.resolve(filePath));
-        const require = createRequire(import.meta.url);
         (global as any).self = global;
-        const zkApp = require('../bundle.cjs');
+        const zkApp = await import(path.resolve(filePath));
+        console.log(zkApp);
         if (zkApp && typeof zkApp.default === 'function') {
             return zkApp.default;
         } else {
@@ -100,18 +99,20 @@ const main = async () => {
 
             let zkAppCode = requestObjetct.zkapp;
             try{
-
-                const dir = '/tmp/zkon-zkapps';
+                const __dirname = import.meta.dirname;
+                const dir = __dirname+'/tmp/zkon-zkapps';
                 const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
                 if (!fs.existsSync(dir)){
                     fs.mkdirSync(dir, { recursive: true });
                 }
                 fs.writeFileSync(dir + '/' + filename, zkAppCode);
-                const zkapp = await getZkAppInstance(dir+'/'+filename);
+                // const zkapp = await getZkAppInstance(dir+'/'+filename);
+                const zkapp = await getZkAppInstance(dir+'/zkonrequest.js');
+                // const zkapp = await getZkAppInstance(dir+'/bundle.cjs');
                 await fetchAccount({publicKey: config.MINA_ADDRESS});
                 await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
                 const zkappInstance = new zkapp(config.ZK_REQUESTS_ADDRESS);
-                // console.log(zkappInstance)
+                console.log(zkappInstance)
                 // console.log(zkapp);
                 let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
                 let sender = senderKey.toPublicKey();

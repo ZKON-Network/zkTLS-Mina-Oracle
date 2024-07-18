@@ -2,11 +2,11 @@
   "name": "node_o1js",
   "version": "1.0.0",
   "description": "",
-  "main": "build/src/index.mjs",
+  "main": "build/src/index.js",
   "type": "module",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "build": "tsc && cp -r verifier build/ && cp bundle.cjs build/",
+    "build": "tsc && cp -r verifier build/ && cp bundle.cjs build/src/tmp/zkon-zkapps/ && cp zkonrequest.js build/src/tmp/zkon-zkapps/ && cp node_modules/zkon-zkapp/build/src/ZkonRequestCoordinator.js build/src/tmp/zkon-zkapps && cp node_modules/zkon-zkapp/build/src/zkProgram.js build/src/tmp/zkon-zkapps",
     "serve": "node build/src/index.js",
     "watch": "npx nodemon --watch src/index.ts --ext ts,json --ignore src/**/*.spec.ts --exec ts-node src/index.ts",
     "prepare": "node build-mina-fungible-token.js && cd node_modules/mina-fungible-token && npm run build"
