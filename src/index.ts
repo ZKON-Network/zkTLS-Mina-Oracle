@@ -8,6 +8,7 @@ import { StringCircuitValue } from './String.js';
 import {numToUint8Array,concatenateUint8Arrays} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
+import ByteArray from './ByteArray.js'
 
 //import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
 import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
@@ -249,55 +250,101 @@ const main = async () => {
             bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
             console.log(`Original Signature: ${notary_proof["session"]["signature"]["P256"]}`);
             
-            const p256data = new P256Data({
-              signature: [
-                signatureParts[0],
-                signatureParts[1],
-                signatureParts[2],
-                signatureParts[3]
-            ],
-              messageHex: [
-                messageParts[0],
-                messageParts[1],
-                messageParts[2],
-                messageParts[3],
-                messageParts[4],
-                messageParts[5],
-                messageParts[6],
-                messageParts[7],
-                messageParts[8],
-                messageParts[9],
-                messageParts[10],
-                messageParts[11]
-            ]
-            });
-
-            let reconstructedSig=''
-            p256data.signature.forEach(part=>{
-                reconstructedSig += part.toString();
-            })
-            console.log(`Reconstructed Signature: ${reconstructedSig}`);
-
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
                 dataField: Field(rawData)
             });
 
-            // const public_key_notary = hexToBytes('0206fdfa148e1916ccc96b40d0149df05825ef54b16b711ccc1b991a4de1c6a12c');
-            // const messageActual = hexToBytes(concatMsg);
-            // const signatureActual = p256.Signature.fromCompact(concatSig)
-            // const resultECDSA = p256.verify(signatureActual, 
-            //     messageActual, 
-            //     public_key_notary, 
-            //     {prehash:true})
-            
-            // console.log(resultECDSA);
-            
+            const signatureFields : Field[] = [];
+            const messageFields: Field[] = [];
+
+            signatureParts.forEach(part=>{
+                signatureFields.push(Field(BigInt(`0x${part}`)))
+            });
+
+            messageParts.forEach(part=>{
+                messageFields.push(Field(BigInt(`0x${part}`)))
+            });
+
+            `${signatureFields[0].toBigInt().toString(16)}${signatureFields[1].toBigInt().toString(16)}${signatureFields[2].toBigInt().toString(16)}${signatureFields[3].toBigInt().toString(16)}` == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
+
+            const p256data = new P256Data({
+                signature: [
+                    signatureFields[0],
+                    signatureFields[1],
+                    signatureFields[2],
+                    signatureFields[3]
+              ],
+                messageHex: [
+                    messageFields[0],
+                    messageFields[1],
+                    messageFields[2],
+                    messageFields[3],
+                    messageFields[4],
+                    messageFields[5],
+                    messageFields[6],
+                    messageFields[7],
+                    messageFields[8],
+                    messageFields[9],
+                    messageFields[10],
+                    messageFields[11]
+              ]
+              });
+
+            //   let reconstructedSig=''
+            //   p256data.signature.forEach(part=>{
+            //       reconstructedSig += part.toBigInt().toString(16);
+            //   })
+            //   console.log(`Reconstructed Signature: ${reconstructedSig}`);
+
+              let reconstructedMsg:string[]=[]
+
+              p256data.messageHex.forEach((part, index)=>{
+                let data:string = part.toBigInt().toString(16);
+                
+                if(data.length !=32 && index != 11){
+                    let padding = ``
+                    for(let i=0;i<(32 - data.length);i++){
+                        padding+='0'
+                    }
+                    data=padding+data;
+                }
+
+                if(index == 11 && data.length != 22){
+                    data = '0'+data;
+                }
+                //Fix for case when last element's first element is 0.
+
+                reconstructedMsg.push(data);
+              })
+              //console.log(reconstructedMsg.slice(0,129), reconstructedMsg.slice(132,377));
+              //console.log(reconstructedMsg.slice(0,128),"000",reconstructedMsg.slice(129,374));
+              //console.log(`${reconstructedMsg.slice(0,128)}000${reconstructedMsg.slice(128,374)}`);
+        
+            //   let newMessage = `${reconstructedMsg.slice(0,128)}000${reconstructedMsg.slice(128,374)}`
+              let ofcourseAgain = '';
+              reconstructedMsg.forEach((data,index)=>{
+                ofcourseAgain+=data
+              })
+
+            console.log(bytesToHex(msgByteArray));
+            console.log(ofcourseAgain);
+            console.log(reconstructedMsg);
+            //   console.log(newMessage);
+
+            bytesToHex(msgByteArray) == ofcourseAgain ?  console.log("true message") : console.log("wrong message");
+
+
+            /*
             const zkonzkP = await ZkonZkProgramTest.compile();
             const proof = await ZkonZkProgramTest.verifySource(
-              publicArguments,
-              D,
-              p256data
+                publicArguments,
+                D,
+                p256data,
+                signatureFields[0],
+                signatureFields[1],
+                signatureFields[2],
+                signatureFields[3]
             );
             
             await verify(proof.toJSON(), zkonzkP.verificationKey);
@@ -360,7 +407,7 @@ const main = async () => {
         console.log('');
         */
         }
-        await sleep(30000); //30 seconds
+        await sleep(1000); //30 seconds
     }
 }
 

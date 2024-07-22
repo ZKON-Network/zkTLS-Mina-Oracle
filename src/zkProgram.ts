@@ -4,8 +4,8 @@ import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import { StringCircuitValue } from './String.js';
 
 class P256Data extends Struct({
-  signature: [StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue],
-  messageHex: [StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue]
+  signature: [Field,Field,Field,Field],
+  messageHex: [Field,Field,Field,Field,Field,Field,Field,Field,Field,Field,Field,Field]
 }){}
 
 class PublicArgumets extends Struct({
@@ -30,29 +30,34 @@ const ZkonZkProgramTest = ZkProgram({
 
   methods:{
     verifySource:{
-      privateInputs: [Field, P256Data], 
+      privateInputs: [Field, P256Data, Field,Field,Field,Field], 
       async method (
         commitment: PublicArgumets,
         decommitment: Field,
-        p256_data: P256Data
+        p256_data: P256Data,
+        field1:Field,
+        field2:Field,
+        field3:Field,
+        field4:Field
       ){
           //P256 Signature Verification
           const assert = Bool(true);
           
           Provable.asProver(()=>{
-            let concatSignature = `${p256_data.signature[0].toString()}`;
+            //let concatSignature = `${field1.toBigInt().toString(16)}${field2.toBigInt().toString(16)}${field3.toBigInt().toString(16)}${field4.toBigInt().toString(16)}`;
+            let concatSignature = ``;
             let concatMessage = ``;
+            
+            p256_data.messageHex.forEach(part=>{
+              concatMessage += part.toBigInt().toString(16);
+            })
+
+            p256_data.signature.forEach(part=>{
+              concatSignature += part.toBigInt().toString(16);
+            })
+
             console.log(`Inside zkProgram: ${concatSignature}`)
-
-            // p256_data.messageHex.forEach(part=>{
-            //   concatMessage += part.toString();
-            // })
-
-            // p256_data.signature.forEach(part=>{
-            //   concatSignature += part.toString();
-            // })
-
-            const messageHex:string = concatMessage;
+            const messageHex:string = concatMessage.slice(0,374);
             const signature: string = concatSignature;
             const checkECDSASignature = checkECDSA(messageHex, signature);
             assert.assertEquals(checkECDSASignature);
