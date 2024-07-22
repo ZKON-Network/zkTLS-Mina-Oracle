@@ -1,12 +1,11 @@
 import { Mina, PublicKey, UInt32,Field,  ZkProgram, Bytes, Hash, state, Bool, verify, Struct, Provable} from 'o1js';
 import { p256, secp256r1 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
-
-//Only kept here for development purpose. Please read from zkon-zkapp repo in prod.
+import { StringCircuitValue } from './String.js';
 
 class P256Data extends Struct({
-  signature: String,
-  messageHex: String
+  signature: [StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue],
+  messageHex: [StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue,StringCircuitValue]
 }){}
 
 class PublicArgumets extends Struct({
@@ -41,7 +40,21 @@ const ZkonZkProgramTest = ZkProgram({
           const assert = Bool(true);
           
           Provable.asProver(()=>{
-            const checkECDSASignature = checkECDSA(p256_data.messageHex, p256_data.signature);
+            let concatSignature = `${p256_data.signature[0].toString()}`;
+            let concatMessage = ``;
+            console.log(concatSignature)
+
+            // p256_data.messageHex.forEach(part=>{
+            //   concatMessage += part.toString();
+            // })
+
+            // p256_data.signature.forEach(part=>{
+            //   concatSignature += part.toString();
+            // })
+
+            const messageHex:string = concatMessage;
+            const signature: string = concatSignature;
+            const checkECDSASignature = checkECDSA(messageHex, signature);
             assert.assertEquals(checkECDSASignature);
           })
           

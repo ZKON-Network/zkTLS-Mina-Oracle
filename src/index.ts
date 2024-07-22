@@ -1,4 +1,4 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct, provablePure, fetchEvents, AccountUpdate, fetchAccount} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,Struct, provablePure, fetchEvents, AccountUpdate, fetchAccount, CircuitString} from 'o1js';
 import { p256 } from '@noble/curves/p256';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils';
 import axios from 'axios';
@@ -10,7 +10,7 @@ import * as path from 'path'
 import config from './config.js';
 
 //import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
-import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram.js';
+import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
 
 import { createRequire } from "node:module"
 const Verifier = createRequire(import.meta.url)("../verifier/index.node")
@@ -61,6 +61,22 @@ const getZkAppInstance = async (filePath: string) => {
     }
 }
 
+function breakStringIntoNParts(str:string, n:number) {
+    let partLength = Math.ceil(str.length / n);
+    let parts = [];
+
+    for (let i = 0; i < str.length; i += partLength) {
+        parts.push(str.substring(i, i + partLength));
+    }
+
+    // Ensure there are exactly n parts
+    while (parts.length < n) {
+        parts.push('');
+    }
+
+    return parts;
+}
+
 const main = async () => {
     while(true) {
 
@@ -97,36 +113,36 @@ const main = async () => {
                 path: 'v1/esoy/info'
             }
 
-            let zkAppCode = requestObjetct.zkapp;
-            try{
-                const __dirname = import.meta.dirname;
-                const dir = __dirname+'/tmp/zkon-zkapps';
-                const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
-                if (!fs.existsSync(dir)){
-                    fs.mkdirSync(dir, { recursive: true });
-                }
-                fs.writeFileSync(dir + '/' + filename, zkAppCode);
-                // const zkapp = await getZkAppInstance(dir+'/'+filename);
-                const zkapp = await getZkAppInstance(dir+'/zkonrequest.js');
-                // const zkapp = await getZkAppInstance(dir+'/bundle.cjs');
-                await fetchAccount({publicKey: config.MINA_ADDRESS});
-                await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
-                const zkappInstance = new zkapp(config.ZK_REQUESTS_ADDRESS);
-                console.log(zkappInstance)
-                // console.log(zkapp);
-                let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
-                let sender = senderKey.toPublicKey();
+            // let zkAppCode = requestObjetct.zkapp;
+            // try{
+            //     const __dirname = import.meta.dirname;
+            //     const dir = __dirname+'/tmp/zkon-zkapps';
+            //     const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
+            //     if (!fs.existsSync(dir)){
+            //         fs.mkdirSync(dir, { recursive: true });
+            //     }
+            //     fs.writeFileSync(dir + '/' + filename, zkAppCode);
+            //     // const zkapp = await getZkAppInstance(dir+'/'+filename);
+            //     const zkapp = await getZkAppInstance(dir+'/zkonrequest.js');
+            //     // const zkapp = await getZkAppInstance(dir+'/bundle.cjs');
+            //     await fetchAccount({publicKey: config.MINA_ADDRESS});
+            //     await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
+            //     const zkappInstance = new zkapp(config.ZK_REQUESTS_ADDRESS);
+            //     console.log(zkappInstance)
+            //     // console.log(zkapp);
+            //     let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
+            //     let sender = senderKey.toPublicKey();
 
-                const proof = null; // ToDO 
-                let transaction = await Mina.transaction(
-                    { sender , fee: transactionFee },
-                    async () => {
-                      await zkappInstance.receiveZkonResponse(Field(1), proof);
-                    }
-                  );
-            }catch(err){
-                console.error(err);
-            }
+            //     const proof = null; // ToDO 
+            //     let transaction = await Mina.transaction(
+            //         { sender , fee: transactionFee },
+            //         async () => {
+            //           await zkappInstance.receiveZkonResponse(Field(1), proof);
+            //         }
+            //       );
+            // }catch(err){
+            //     console.error(err);
+            // }
 
             /* Suggestion: Can we structure the IPFS as follows? 
             IPFS={
@@ -136,8 +152,21 @@ const main = async () => {
                 zkapp: 
             }
             */
-            /*
-            console.time('Execution of Request to TLSN Client & Proof Generation');
+
+            // // Experiment Block
+            // // P256 Signature: 50DD6F9B0A2D5192A09F055C656DEC685890E47D640C6AB448CA720EA7C0256745B9F509484268080B28240E2181A47CA08AAEC65FF5D2A3C4A9D27C89818800
+            // class BytesSignature extends Bytes(128) {}
+            // let bytes = BytesSignature.fromHex('135EBD86EB50DA1129D3CCDDA2013681F13DA94146956954C295F21A4FDB7D0CFE4AD6C664F4E4A1C1EAABAE7A213D056C17294AC8482CC1829471EEBE36B311');
+            // // console.log('135EBD86EB50DA1129D3CCDDA2013681F13DA94146956954C295F21A4FDB7D0CFE4AD6C664F4E4A1C1EAABAE7A213D056C17294AC8482CC1829471EEBE36B311')
+            // // console.log(bytes.toHex().slice(0,128));
+
+            // //MSG: 7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e
+            // class BytesMessage extends Bytes(502) {}
+            // let bytes1 = BytesMessage.fromHex('7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e');
+            // console.log('7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e\n')
+            // console.log(bytes1.toHex().slice(0,502));
+        
+            //console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post('https://127.0.0.1:5000/proof',proofObject, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
             const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
@@ -175,16 +204,95 @@ const main = async () => {
                 }
             }
 
-            const p256data = new P256Data({
-              signature: notary_proof["session"]["signature"]["P256"],
-              messageHex: bytesToHex(msgByteArray)
+            // class BytesSignature extends Bytes(128) {}
+            // let bytes = BytesSignature.fromHex(notary_proof["session"]["signature"]["P256"]);
+            // console.log(notary_proof["session"]["signature"]["P256"]);
+            // console.log(bytes.toHex().slice(0,128));
+
+            // class BytesMessage extends Bytes(374) {}
+            // let bytes1 = BytesMessage.fromHex(bytesToHex(msgByteArray));
+            // console.log(bytesToHex(msgByteArray));
+            // let stuff:string = bytesToHex(msgByteArray);
+            // console.log(stuff.length)
+            // console.log(bytes1.toHex().slice(0,374));
+
+             // notary_proof["session"]["signature"]["P256"].toLowerCase() == bytes.toHex().slice(0,128) ? console.log("true Signature") : console.log("wrong Signature");
+            // bytesToHex(msgByteArray) == bytes1.toHex().slice(0,374) ?  console.log("true message") : console.log("wrong message");
+
+            let signaturePartsString = breakStringIntoNParts(notary_proof["session"]["signature"]["P256"],4);
+            let messagePartsString = breakStringIntoNParts(bytesToHex(msgByteArray),12);
+
+            let messageParts: StringCircuitValue[] = [];
+            let signatureParts: StringCircuitValue[] = [];
+
+            signaturePartsString.forEach(part => {
+                signatureParts.push(new StringCircuitValue(part));
             });
+
+            messagePartsString.forEach(part => {
+                messageParts.push(new StringCircuitValue(part));
+            });
+
+            //Checks
+            let concatMsg='';
+            let concatSig='';
+
+            messageParts.forEach(part=>{
+                concatMsg += part.toString();
+            })
+
+            signatureParts.forEach(part=>{
+                concatSig += part.toString();
+            })
+
+            notary_proof["session"]["signature"]["P256"] ==concatSig ? console.log("true Signature") : console.log("wrong Signature");
+            bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
+            console.log(concatSig);
+            
+            const p256data = new P256Data({
+              signature: [
+                signatureParts[0],
+                signatureParts[1],
+                signatureParts[2],
+                signatureParts[3]
+            ],
+              messageHex: [
+                messageParts[0],
+                messageParts[1],
+                messageParts[2],
+                messageParts[3],
+                messageParts[4],
+                messageParts[5],
+                messageParts[6],
+                messageParts[7],
+                messageParts[8],
+                messageParts[9],
+                messageParts[10],
+                messageParts[11]
+            ]
+            });
+
+            let reconstructedSig=''
+            p256data.signature.forEach(part=>{
+                reconstructedSig += part.toString();
+            })
+            console.log(`Reconstructed Signature: ${reconstructedSig}`);
 
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
                 dataField: Field(rawData)
-            })
+            });
 
+            // const public_key_notary = hexToBytes('0206fdfa148e1916ccc96b40d0149df05825ef54b16b711ccc1b991a4de1c6a12c');
+            // const messageActual = hexToBytes(concatMsg);
+            // const signatureActual = p256.Signature.fromCompact(concatSig)
+            // const resultECDSA = p256.verify(signatureActual, 
+            //     messageActual, 
+            //     public_key_notary, 
+            //     {prehash:true})
+            
+            // console.log(resultECDSA);
+            
             const zkonzkP = await ZkonZkProgramTest.compile();
             const proof = await ZkonZkProgramTest.verifySource(
               publicArguments,
@@ -199,7 +307,7 @@ const main = async () => {
             //Send the transaction to the zkApp 
 
             // ToDO: Download zkapp from ipfs and execute it:
-            
+            /*
             let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
             let sender = senderKey.toPublicKey();
 
