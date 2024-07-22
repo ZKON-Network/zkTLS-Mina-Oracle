@@ -30,15 +30,11 @@ const ZkonZkProgramTest = ZkProgram({
 
   methods:{
     verifySource:{
-      privateInputs: [Field, P256Data, Field,Field,Field,Field], 
+      privateInputs: [Field, P256Data], 
       async method (
         commitment: PublicArgumets,
         decommitment: Field,
         p256_data: P256Data,
-        field1:Field,
-        field2:Field,
-        field3:Field,
-        field4:Field
       ){
           //P256 Signature Verification
           const assert = Bool(true);
@@ -46,18 +42,53 @@ const ZkonZkProgramTest = ZkProgram({
           Provable.asProver(()=>{
             //let concatSignature = `${field1.toBigInt().toString(16)}${field2.toBigInt().toString(16)}${field3.toBigInt().toString(16)}${field4.toBigInt().toString(16)}`;
             let concatSignature = ``;
-            let concatMessage = ``;
-            
-            p256_data.messageHex.forEach(part=>{
-              concatMessage += part.toBigInt().toString(16);
+            let concatMessage=``;
+            let fixedMessage:string[] = [];
+            let fixedSignature:string[]=[];
+
+            p256_data.messageHex.forEach((part, index)=>{
+              let data:string = part.toBigInt().toString(16);
+
+              if(data.length !=32 && index != 11){
+                let padding = ``
+                for(let i=0;i<(32 - data.length);i++){
+                    padding+='0'
+                }
+                data=padding+data;
+              }
+
+              if(index == 11 && data.length != 22){
+                  data = '0'+data;
+              }
+
+              fixedMessage.push(data);
             })
 
-            p256_data.signature.forEach(part=>{
-              concatSignature += part.toBigInt().toString(16);
+            p256_data.signature.forEach((part, index)=>{
+              let data:string = part.toBigInt().toString(16);
+
+              if(data.length !=32){
+                  let padding = ``
+                  for(let i=0;i<(32 - data.length);i++){
+                      padding+='0'
+                  }
+                  data=padding+data;
+              }
+
+              fixedSignature.push(data);
+          })
+
+            fixedMessage.forEach((data,index)=>{
+              concatMessage+=data
             })
 
-            console.log(`Inside zkProgram: ${concatSignature}`)
-            const messageHex:string = concatMessage.slice(0,374);
+            fixedSignature.forEach(data=>{
+              concatSignature += data;
+            })
+
+            console.log(concatSignature)
+
+            const messageHex:string = concatMessage;
             const signature: string = concatSignature;
             const checkECDSASignature = checkECDSA(messageHex, signature);
             assert.assertEquals(checkECDSASignature);

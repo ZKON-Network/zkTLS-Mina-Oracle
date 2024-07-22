@@ -167,7 +167,7 @@ const main = async () => {
             // console.log('7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e\n')
             // console.log(bytes1.toHex().slice(0,502));
         
-            //console.time('Execution of Request to TLSN Client & Proof Generation');
+            console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post('https://127.0.0.1:5000/proof',proofObject, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
             const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
@@ -248,7 +248,7 @@ const main = async () => {
 
             notary_proof["session"]["signature"]["P256"] ==concatSig ? console.log("true Signature") : console.log("wrong Signature");
             bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
-            console.log(`Original Signature: ${notary_proof["session"]["signature"]["P256"]}`);
+            console.log(`${notary_proof["session"]["signature"]["P256"]}`);
             
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
@@ -266,7 +266,31 @@ const main = async () => {
                 messageFields.push(Field(BigInt(`0x${part}`)))
             });
 
-            `${signatureFields[0].toBigInt().toString(16)}${signatureFields[1].toBigInt().toString(16)}${signatureFields[2].toBigInt().toString(16)}${signatureFields[3].toBigInt().toString(16)}` == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
+            let fixedMessage:string[]=[]
+
+            
+            messageFields.forEach((part, index)=>{
+                    let data:string = part.toBigInt().toString(16);
+
+                    if(data.length !=32 && index != 11){
+                        let padding = ``
+                        for(let i=0;i<(32 - data.length);i++){
+                            padding+='0'
+                        }
+                        data=padding+data;
+                    }
+
+                    if(index == 11 && data.length != 22){
+                        data = '0'+data;
+                    }
+
+                    fixedMessage.push(data);
+            })
+
+            let ofcourseAgain = '';
+            fixedMessage.forEach((data,index)=>{
+                ofcourseAgain+=data
+            })
 
             const p256data = new P256Data({
                 signature: [
@@ -289,20 +313,13 @@ const main = async () => {
                     messageFields[10],
                     messageFields[11]
               ]
-              });
+            });
 
-            //   let reconstructedSig=''
-            //   p256data.signature.forEach(part=>{
-            //       reconstructedSig += part.toBigInt().toString(16);
-            //   })
-            //   console.log(`Reconstructed Signature: ${reconstructedSig}`);
-
-              let reconstructedMsg:string[]=[]
-
-              p256data.messageHex.forEach((part, index)=>{
+            let fixedSignature:string[]=[]
+            p256data.signature.forEach((part, index)=>{
                 let data:string = part.toBigInt().toString(16);
-                
-                if(data.length !=32 && index != 11){
+
+                if(data.length !=32){
                     let padding = ``
                     for(let i=0;i<(32 - data.length);i++){
                         padding+='0'
@@ -310,46 +327,29 @@ const main = async () => {
                     data=padding+data;
                 }
 
-                if(index == 11 && data.length != 22){
-                    data = '0'+data;
-                }
-                //Fix for case when last element's first element is 0.
+                fixedSignature.push(data);
+            })
 
-                reconstructedMsg.push(data);
-              })
-              //console.log(reconstructedMsg.slice(0,129), reconstructedMsg.slice(132,377));
-              //console.log(reconstructedMsg.slice(0,128),"000",reconstructedMsg.slice(129,374));
-              //console.log(`${reconstructedMsg.slice(0,128)}000${reconstructedMsg.slice(128,374)}`);
+            let reconstructedSig=''
+            fixedSignature.forEach(data=>{
+                reconstructedSig+=data
+            })
+
+            console.log(`${reconstructedSig}`);
         
-            //   let newMessage = `${reconstructedMsg.slice(0,128)}000${reconstructedMsg.slice(128,374)}`
-              let ofcourseAgain = '';
-              reconstructedMsg.forEach((data,index)=>{
-                ofcourseAgain+=data
-              })
-
-            console.log(bytesToHex(msgByteArray));
-            console.log(ofcourseAgain);
-            console.log(reconstructedMsg);
-            //   console.log(newMessage);
-
+            reconstructedSig == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
             bytesToHex(msgByteArray) == ofcourseAgain ?  console.log("true message") : console.log("wrong message");
-
-
-            /*
+            
             const zkonzkP = await ZkonZkProgramTest.compile();
             const proof = await ZkonZkProgramTest.verifySource(
                 publicArguments,
                 D,
-                p256data,
-                signatureFields[0],
-                signatureFields[1],
-                signatureFields[2],
-                signatureFields[3]
+                p256data
             );
             
-            await verify(proof.toJSON(), zkonzkP.verificationKey);
+            const resultZk = await verify(proof.toJSON(), zkonzkP.verificationKey);
             console.timeEnd('Execution of Request to TLSN Client & Proof Generation')
-
+            console.log('Proof verified?', resultZk);
             console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
             //Send the transaction to the zkApp 
 
