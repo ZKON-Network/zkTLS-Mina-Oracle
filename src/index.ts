@@ -247,7 +247,7 @@ const main = async () => {
 
             notary_proof["session"]["signature"]["P256"] ==concatSig ? console.log("true Signature") : console.log("wrong Signature");
             bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
-            console.log(concatSig);
+            console.log(`Original Signature: ${notary_proof["session"]["signature"]["P256"]}`);
             
             const p256data = new P256Data({
               signature: [

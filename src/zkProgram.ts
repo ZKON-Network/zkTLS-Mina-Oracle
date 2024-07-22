@@ -42,7 +42,7 @@ const ZkonZkProgramTest = ZkProgram({
           Provable.asProver(()=>{
             let concatSignature = `${p256_data.signature[0].toString()}`;
             let concatMessage = ``;
-            console.log(concatSignature)
+            console.log(`Inside zkProgram: ${concatSignature}`)
 
             // p256_data.messageHex.forEach(part=>{
             //   concatMessage += part.toString();
