@@ -10,8 +10,8 @@ import * as path from 'path'
 import config from './config.js';
 import ByteArray from './ByteArray.js'
 
-//import {ZkonZkProgram, P256Data, PublicArgumets} from 'zkon-zkapp';
-import {ZkonZkProgramTest, P256Data, PublicArgumets} from './zkProgram';
+import {ZkonZkProgram} from 'zkon-zkapp';
+import {P256Data, PublicArgumets} from './zkProgram.js';
 
 import { createRequire } from "node:module"
 const Verifier = createRequire(import.meta.url)("../verifier/index.node")
@@ -110,9 +110,18 @@ const main = async () => {
             
             const proofObject ={
                 method: 'GET',
-                baseURL: 'r-api.e-grains.com',
-                path: 'v1/esoy/info'
+                baseURL: requestObjetct.baseURL.slice(0, (requestObjetct.baseURL.indexOf('com')+3)),
+                path: requestObjetct.baseURL.slice((requestObjetct.baseURL.indexOf('com')+4))
             }
+            
+            let zkAppCode = requestObjetct.zkapp;
+            const __dirname = import.meta.dirname;
+            const dir = __dirname+'/tmp/zkon-zkapps';
+            const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(dir + '/' + filename, zkAppCode);
 
             // let zkAppCode = requestObjetct.zkapp;
             // try{
@@ -154,18 +163,6 @@ const main = async () => {
             }
             */
 
-            // // Experiment Block
-            // // P256 Signature: 50DD6F9B0A2D5192A09F055C656DEC685890E47D640C6AB448CA720EA7C0256745B9F509484268080B28240E2181A47CA08AAEC65FF5D2A3C4A9D27C89818800
-            // class BytesSignature extends Bytes(128) {}
-            // let bytes = BytesSignature.fromHex('135EBD86EB50DA1129D3CCDDA2013681F13DA94146956954C295F21A4FDB7D0CFE4AD6C664F4E4A1C1EAABAE7A213D056C17294AC8482CC1829471EEBE36B311');
-            // // console.log('135EBD86EB50DA1129D3CCDDA2013681F13DA94146956954C295F21A4FDB7D0CFE4AD6C664F4E4A1C1EAABAE7A213D056C17294AC8482CC1829471EEBE36B311')
-            // // console.log(bytes.toHex().slice(0,128));
-
-            // //MSG: 7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e
-            // class BytesMessage extends Bytes(502) {}
-            // let bytes1 = BytesMessage.fromHex('7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e');
-            // console.log('7ac9297d217251340f2ccccfe752f86b15360627da939b044fb1ce9d7e92cf6fed7f7514fb7cc53e099b91146ba5bbf792ee60efa4e2233b959b2b303eff49210001000000000000c003000000000000441e9e66000000000041045fecd538b0e87c0b4f3978a8cae2aa58a321bbee4df7ec85336a504b2d89287dd8e7c3199df0bfc3a866999553aeef794cdf260af27fc86e9ba2f7d0118b9e997e15255dc9990fd6af4edaa1624199b72e8a405bb8815e66249717f8efe2f49e\n')
-            // console.log(bytes1.toHex().slice(0,502));
         
             console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post('https://127.0.0.1:5000/proof',proofObject, { httpsAgent: agent })).data;
@@ -205,21 +202,6 @@ const main = async () => {
                 }
             }
 
-            // class BytesSignature extends Bytes(128) {}
-            // let bytes = BytesSignature.fromHex(notary_proof["session"]["signature"]["P256"]);
-            // console.log(notary_proof["session"]["signature"]["P256"]);
-            // console.log(bytes.toHex().slice(0,128));
-
-            // class BytesMessage extends Bytes(374) {}
-            // let bytes1 = BytesMessage.fromHex(bytesToHex(msgByteArray));
-            // console.log(bytesToHex(msgByteArray));
-            // let stuff:string = bytesToHex(msgByteArray);
-            // console.log(stuff.length)
-            // console.log(bytes1.toHex().slice(0,374));
-
-             // notary_proof["session"]["signature"]["P256"].toLowerCase() == bytes.toHex().slice(0,128) ? console.log("true Signature") : console.log("wrong Signature");
-            // bytesToHex(msgByteArray) == bytes1.toHex().slice(0,374) ?  console.log("true message") : console.log("wrong message");
-
             let signaturePartsString = breakStringIntoNParts(notary_proof["session"]["signature"]["P256"],4);
             let messagePartsString = breakStringIntoNParts(bytesToHex(msgByteArray),12);
 
@@ -248,7 +230,7 @@ const main = async () => {
 
             notary_proof["session"]["signature"]["P256"] ==concatSig ? console.log("true Signature") : console.log("wrong Signature");
             bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
-            console.log(`${notary_proof["session"]["signature"]["P256"]}`);
+            //console.log(`${notary_proof["session"]["signature"]["P256"]}`);
             
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
@@ -340,8 +322,8 @@ const main = async () => {
             reconstructedSig == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
             bytesToHex(msgByteArray) == ofcourseAgain ?  console.log("true message") : console.log("wrong message");
             
-            const zkonzkP = await ZkonZkProgramTest.compile();
-            const proof = await ZkonZkProgramTest.verifySource(
+            const zkonzkP = await ZkonZkProgram.compile();
+            const proof = await ZkonZkProgram.verifySource(
                 publicArguments,
                 D,
                 p256data
@@ -352,6 +334,48 @@ const main = async () => {
             console.log('Proof verified?', resultZk);
             console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
             //Send the transaction to the zkApp 
+            let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
+            let sender = senderKey.toPublicKey();
+
+            let zkRequestAddress = PublicKey.fromBase58(config.ZK_REQUESTS_ADDRESS);
+    
+            let zkApp = await getZkAppInstance(dir+'/zkonrequest.js');
+            // await zkApp.compile();
+            console.log('Compiled');
+
+            await fetchAccount({publicKey: config.MINA_ADDRESS});
+            await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
+            console.log('Accounts fetched!');
+            const zkRequest = new zkApp(zkRequestAddress);
+            console.log(await zkRequest.receiveZkonResponse(Field(1),proof));
+
+
+            // Send request via zkRequest app
+            console.log(`Sending request via zkRequest at ${zkRequestAddress.toBase58()}`);  
+            let transaction = await Mina.transaction(
+                { sender, fee: transactionFee },
+                async () => {
+                await zkRequest.receiveZkonResponse(Field(1),proof);
+                }
+            );
+            console.log('Generating proof');
+            await transaction.prove()
+            console.log('Proof generated');
+
+            console.log('Signing');
+            transaction.sign([senderKey]);
+            console.log('');
+            console.log(`Sending the transaction for deploying zkRequest to: ${zkRequestAddress.toBase58()}`);
+            let pendingTx = await transaction.send();
+            if (pendingTx.status === 'pending') {
+                console.log(`Success! Deploy transaction sent.
+            Your smart contract will be deployed
+            as soon as the transaction is included in a block.
+            Txn hash: ${pendingTx.hash}
+            Block explorer hash: https://minascan.io/devnet/tx/${pendingTx.hash}`);
+            }
+            console.log('Waiting for transaction inclusion in a block.');
+            await pendingTx.wait({ maxAttempts: 90 });
 
             // ToDO: Download zkapp from ipfs and execute it:
             /*
@@ -403,11 +427,10 @@ const main = async () => {
             //         localData,      
             //     { spaces: 2 }
             //     );
-            // }
+            // }*/
         console.log('');
-        */
         }
-        await sleep(1000); //30 seconds
+        await sleep(5000); //30 seconds
     }
 }
 
