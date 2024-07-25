@@ -56,6 +56,31 @@ const getZkAppInstance = async (filePath: string) => {
     }
 }
 
+const checkZkAppEventEmitted = async (
+  zkAppAddress: PublicKey,
+  requestId: string,
+  fieldHash1: Field,
+  fieldHash2: Field
+): Promise<boolean> => {
+  const Network = Mina.Network({
+    mina: "https://api.minascan.io/node/devnet/v1/graphql",
+    archive: "https://api.minascan.io/archive/devnet/v1/graphql",
+  });
+  Mina.setActiveInstance(Network);
+
+  const zkAppEvents = await fetchEvents({
+    publicKey: zkAppAddress.toBase58(),
+  });
+
+  return zkAppEvents.some(
+    (e) =>
+    //ToDo check eventType 
+      e.events[0].data[0] === requestId.toString() &&
+      e.events[0].data[1] === fieldHash1.toString() &&
+      e.events[0].data[2] === fieldHash2.toString()            
+  );
+};
+
 const main = async () => {
     while(true) {
 
@@ -87,6 +112,24 @@ const main = async () => {
             const senderXhash: Field = Field(log.events[0].data[4]);
             const senderYhash: Field = Field(log.events[0].data[5]);
             let zkRequestAddress = PublicKey.fromFields([senderXhash,senderYhash])
+            
+            const eventEmittedByZkApp = await checkZkAppEventEmitted(zkRequestAddress, requestId, fieldHash1, fieldHash2);
+
+            // const requestFullfilled = logs.some(
+            //   (e) =>
+            //     e.events[0].data.length == 2 && //ToDo check eventType
+            //     e.events[0].data[1] === requestId.toString()
+            // );
+
+            // if (!eventEmittedByZkApp){
+            //     console.log('Event not emmited by the zkApp')
+            //     break
+            // }
+            
+            // if (requestFullfilled){
+            //     console.log('Request already fullfilled')
+            //     break
+            // }
             
             //Fetch JSON from IPFS            
             let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
@@ -129,7 +172,7 @@ const main = async () => {
                 "group":[0,65],
                 "key":json_notary["handshake_summary"]["server_public_key"]["key"],
                 "handshake_commitment":json_notary["handshake_summary"]["handshake_commitment"]
-              };
+                };
 
             const msgByteArray = concatenateUint8Arrays(message);
             
@@ -183,7 +226,7 @@ const main = async () => {
                     signatureFields[1],
                     signatureFields[2],
                     signatureFields[3]
-              ],
+                ],
                 messageHex: [
                     messageFields[0],
                     messageFields[1],
@@ -197,7 +240,7 @@ const main = async () => {
                     messageFields[9],
                     messageFields[10],
                     messageFields[11]
-              ]
+                ]
             });
         
             const zkonzkP = await ZkonZkProgram.compile();
@@ -260,8 +303,8 @@ const main = async () => {
             }
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
-        
-        console.log('');
+            
+            console.log('');
         }
         await sleep(60000); //60 seconds
     }
