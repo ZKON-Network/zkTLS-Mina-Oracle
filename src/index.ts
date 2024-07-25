@@ -263,7 +263,7 @@ const main = async () => {
         
         console.log('');
         }
-        await sleep(15000); //5 seconds
+        await sleep(60000); //60 seconds
     }
 }
 
