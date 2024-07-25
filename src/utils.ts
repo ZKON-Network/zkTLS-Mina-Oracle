@@ -24,3 +24,19 @@ export function concatenateUint8Arrays(jsonData:any) {
     });
     return combinedArray;
 }
+
+export function breakStringIntoNParts(str:string, n:number) {
+    let partLength = Math.ceil(str.length / n);
+    let parts = [];
+
+    for (let i = 0; i < str.length; i += partLength) {
+        parts.push(str.substring(i, i + partLength));
+    }
+
+    // Ensure there are exactly n parts
+    while (parts.length < n) {
+        parts.push('');
+    }
+
+    return parts;
+}

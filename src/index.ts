@@ -4,7 +4,7 @@ import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String.js';
-import {numToUint8Array,concatenateUint8Arrays} from './utils.js';
+import {numToUint8Array,concatenateUint8Arrays, breakStringIntoNParts} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
 
@@ -54,22 +54,6 @@ const getZkAppInstance = async (filePath: string) => {
     } catch (error) {
         throw new Error(`Error executing zkApp: ${(error as any).message}`);
     }
-}
-
-function breakStringIntoNParts(str:string, n:number) {
-    let partLength = Math.ceil(str.length / n);
-    let parts = [];
-
-    for (let i = 0; i < str.length; i += partLength) {
-        parts.push(str.substring(i, i + partLength));
-    }
-
-    // Ensure there are exactly n parts
-    while (parts.length < n) {
-        parts.push('');
-    }
-
-    return parts;
 }
 
 const main = async () => {
@@ -176,21 +160,6 @@ const main = async () => {
             messagePartsString.forEach(part => {
                 messageParts.push(new StringCircuitValue(part));
             });
-
-            //Checks
-            let concatMsg='';
-            let concatSig='';
-
-            messageParts.forEach(part=>{
-                concatMsg += part.toString();
-            })
-
-            signatureParts.forEach(part=>{
-                concatSig += part.toString();
-            })
-
-            // notary_proof["session"]["signature"]["P256"] ==concatSig ? console.log("true Signature") : console.log("wrong Signature");
-            // bytesToHex(msgByteArray) == concatMsg.slice(0,374) ?  console.log("true message") : console.log("wrong message");
             
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
@@ -207,30 +176,6 @@ const main = async () => {
             messageParts.forEach(part=>{
                 messageFields.push(Field(BigInt(`0x${part}`)))
             });
-
-            let fixedMessage:string[]=[]
-            messageFields.forEach((part, index)=>{
-                    let data:string = part.toBigInt().toString(16);
-
-                    if(data.length !=32 && index != 11){
-                        let padding = ``
-                        for(let i=0;i<(32 - data.length);i++){
-                            padding+='0'
-                        }
-                        data=padding+data;
-                    }
-
-                    if(index == 11 && data.length != 22){
-                        data = '0'+data;
-                    }
-
-                    fixedMessage.push(data);
-            })
-
-            let ofcourseAgain = '';
-            fixedMessage.forEach((data,index)=>{
-                ofcourseAgain+=data
-            })
 
             const p256data = new P256Data({
                 signature: [
@@ -254,30 +199,7 @@ const main = async () => {
                     messageFields[11]
               ]
             });
-
-            let fixedSignature:string[]=[]
-            p256data.signature.forEach((part, index)=>{
-                let data:string = part.toBigInt().toString(16);
-
-                if(data.length !=32){
-                    let padding = ``
-                    for(let i=0;i<(32 - data.length);i++){
-                        padding+='0'
-                    }
-                    data=padding+data;
-                }
-
-                fixedSignature.push(data);
-            })
-
-            let reconstructedSig=''
-            fixedSignature.forEach(data=>{
-                reconstructedSig+=data
-            })
         
-            // reconstructedSig == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
-            // bytesToHex(msgByteArray) == ofcourseAgain ?  console.log("true message") : console.log("wrong message");
-            
             const zkonzkP = await ZkonZkProgram.compile();
             const proof = await ZkonZkProgram.verifySource(
                 publicArguments,
@@ -341,7 +263,7 @@ const main = async () => {
         
         console.log('');
         }
-        await sleep(5000); //5 seconds
+        await sleep(15000); //5 seconds
     }
 }
 
