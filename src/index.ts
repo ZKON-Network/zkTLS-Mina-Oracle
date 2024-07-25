@@ -100,11 +100,9 @@ const main = async () => {
             const hash2 = StringCircuitValue.fromField(fieldHash2).toString().replace(/\0/g, '')
             const ipfsHashFile = hash1.concat(hash2);
 
-            const senderXhash = Field(log.events[0].data[4]);
-            const senderYhash = Field(log.events[0].data[5]);
-            const hashX = StringCircuitValue.fromField(senderXhash).toString().replace(/\0/g, '')
-            const hashY = StringCircuitValue.fromField(senderYhash).toString().replace(/\0/g, '')
-            const EventzkRequestAddress = hashX.concat(hashY);
+            const senderXhash: Field = Field(log.events[0].data[4]);
+            const senderYhash: Field = Field(log.events[0].data[5]);
+            let zkRequestAddress = PublicKey.fromFields([senderXhash,senderYhash])
             
             //Fetch JSON from IPFS            
             let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
@@ -276,8 +274,6 @@ const main = async () => {
             fixedSignature.forEach(data=>{
                 reconstructedSig+=data
             })
-
-            console.log(`${reconstructedSig}`);
         
             // reconstructedSig == notary_proof["session"]["signature"]["P256"].toLowerCase() ? console.log("true Signature") : console.log("wrong Signature");
             // bytesToHex(msgByteArray) == ofcourseAgain ?  console.log("true message") : console.log("wrong message");
@@ -297,8 +293,6 @@ const main = async () => {
             //Send the transaction to the zkApp 
             let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
             let sender = senderKey.toPublicKey();
-
-            let zkRequestAddress = PublicKey.fromBase58(EventzkRequestAddress);
     
             let zkAppObj = await getZkAppInstance(dir+'/'+filename);
             let zkProgramObj = await getZkAppInstance(dir+'/zkProgram.js');
@@ -344,7 +338,7 @@ const main = async () => {
             }
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
-
+        
         console.log('');
         }
         await sleep(5000); //5 seconds
