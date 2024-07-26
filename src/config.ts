@@ -8,7 +8,6 @@ delete process.env.PRIVATE_KEY;
 delete process.env.IPFS_GATEWAY;
 delete process.env.USE_CUSTOM_LOCAL_NETWORK;
 delete process.env.MINA_PRIVATE_KEY;
-delete process.env.ZK_REQUESTS_ADDRESS;
 delete process.env.PROOF_CLIENT_ADDR;
 
 dotenv.config();
@@ -22,7 +21,6 @@ interface ENV {
     IPFS_GATEWAY: string| undefined;
     USE_CUSTOM_LOCAL_NETWORK:string| undefined;
     MINA_PRIVATE_KEY: string| undefined;
-    ZK_REQUESTS_ADDRESS: string|undefined;
     PROOF_CLIENT_ADDR: string|undefined;
 }
 
@@ -35,7 +33,6 @@ interface Config {
     IPFS_GATEWAY: string;
     USE_CUSTOM_LOCAL_NETWORK:string;
     MINA_PRIVATE_KEY: string;
-    ZK_REQUESTS_ADDRESS: string;
     PROOF_CLIENT_ADDR:string;
 }
 
@@ -49,7 +46,6 @@ const getConfig = (): ENV => {
         IPFS_GATEWAY: process.env.IPFS_GATEWAY,
         USE_CUSTOM_LOCAL_NETWORK: process.env.USE_CUSTOM_LOCAL_NETWORK,
         MINA_PRIVATE_KEY: process.env.MINA_PRIVATE_KEY,
-        ZK_REQUESTS_ADDRESS: process.env.ZK_REQUESTS_ADDRESS,
         PROOF_CLIENT_ADDR: process.env.PROOF_CLIENT_ADDR
     };
   };

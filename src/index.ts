@@ -273,7 +273,7 @@ const main = async () => {
             console.log('ZkApp Compiled');
 
             await fetchAccount({publicKey: config.MINA_ADDRESS});
-            await fetchAccount({publicKey: config.ZK_REQUESTS_ADDRESS});
+            await fetchAccount({publicKey: zkRequestAddress.toBase58()});
             console.log('Accounts fetched!');
             const zkRequest = new zkApp(zkRequestAddress);
 
