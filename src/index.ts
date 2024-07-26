@@ -103,7 +103,7 @@ const main = async () => {
         for (const log of logs) {
             if (log.events[0].data.length != 6){
                 console.log("Not request event")
-                break
+                continue;
             }
             let requestId = log.events[0].data[1];
 
@@ -128,12 +128,12 @@ const main = async () => {
 
             if (!eventEmittedByZkApp){
                 console.log('Event not emmited by the zkApp')
-                break
+                continue;
             }
             
             if (requestFullfilled){
                 console.log('Request already fullfilled')
-                break
+                continue;
             }
             
             //Fetch JSON from IPFS            
