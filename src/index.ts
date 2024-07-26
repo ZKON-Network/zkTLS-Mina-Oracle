@@ -101,6 +101,10 @@ const main = async () => {
           });
         console.log('Events found: ', logs.length);
         for (const log of logs) {
+            if (log.events[0].data.length != 6){
+                console.log("Not request event")
+                break
+            }
             let requestId = log.events[0].data[1];
 
             const fieldHash1 = Field(log.events[0].data[2]);
@@ -115,21 +119,22 @@ const main = async () => {
             
             const eventEmittedByZkApp = await checkZkAppEventEmitted(zkRequestAddress, requestId, fieldHash1, fieldHash2);
 
-            // const requestFullfilled = logs.some(
-            //   (e) =>
-            //     e.events[0].data.length == 2 && //ToDo check eventType
-            //     e.events[0].data[1] === requestId.toString()
-            // );
+            const requestFullfilled = logs.some(
+              (e) =>
+                e.events[0].data.length == 2 && //Assuming that events with 2 fields and field[0] == 0, are the "fullfilled" event
+                e.events[0].data[0] === "0" &&
+                e.events[0].data[1] === requestId.toString()
+            );
 
-            // if (!eventEmittedByZkApp){
-            //     console.log('Event not emmited by the zkApp')
-            //     break
-            // }
+            if (!eventEmittedByZkApp){
+                console.log('Event not emmited by the zkApp')
+                break
+            }
             
-            // if (requestFullfilled){
-            //     console.log('Request already fullfilled')
-            //     break
-            // }
+            if (requestFullfilled){
+                console.log('Request already fullfilled')
+                break
+            }
             
             //Fetch JSON from IPFS            
             let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
