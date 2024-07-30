@@ -1,3 +1,5 @@
+import { Field } from 'o1js';
+
 export function numToUint8Array(num:any) {
     let arr = new Uint8Array(8);
   
@@ -39,4 +41,17 @@ export function breakStringIntoNParts(str:string, n:number) {
     }
 
     return parts;
+}
+
+export function numberToBytes(num: number) {
+    const buffer = new ArrayBuffer(8);
+    const view = new DataView(buffer);
+    view.setInt32(0, num, true);
+    return new Uint8Array(buffer);
+}
+  
+export function bytesToFields(bytes: Uint8Array): Field[] {
+    const fields: Field[] = [];
+    bytes.forEach((byte: number) => fields.push(Field(byte)));
+    return fields;
 }

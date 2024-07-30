@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "clmul"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=850636f#850636fae4b327d2dba3924c9fa7a8c4c9003ab1"
+source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "bytemuck",
  "cfg-if",
@@ -618,6 +618,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "k256"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "956ff9b67e26e1a6a866cb758f12c6f8746208489e3e4a4b5580802f2f0a587b"
+dependencies = [
+ "cfg-if",
+ "ecdsa",
+ "elliptic-curve",
+ "once_cell",
+ "sha2",
+ "signature",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -648,7 +662,7 @@ checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 [[package]]
 name = "mpz-circuits"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=850636f#850636fae4b327d2dba3924c9fa7a8c4c9003ab1"
+source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "bincode",
  "itybity",
@@ -665,7 +679,7 @@ dependencies = [
 [[package]]
 name = "mpz-circuits-macros"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=850636f#850636fae4b327d2dba3924c9fa7a8c4c9003ab1"
+source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -675,7 +689,7 @@ dependencies = [
 [[package]]
 name = "mpz-core"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=850636f#850636fae4b327d2dba3924c9fa7a8c4c9003ab1"
+source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "aes",
  "bcs",
@@ -699,7 +713,7 @@ dependencies = [
 [[package]]
 name = "mpz-garble-core"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=850636f#850636fae4b327d2dba3924c9fa7a8c4c9003ab1"
+source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "aes",
  "blake3",
@@ -709,6 +723,7 @@ dependencies = [
  "mpz-circuits",
  "mpz-core",
  "once_cell",
+ "opaque-debug",
  "rand",
  "rand_chacha",
  "rand_core",
@@ -1182,12 +1197,12 @@ dependencies = [
 
 [[package]]
 name = "tlsn-core"
-version = "0.1.0-alpha.4"
-source = "git+https://github.com/tlsnotary/tlsn.git?tag=v0.1.0-alpha.4#309c37fdecd719d8837ec617646a2d394ac3386f"
+version = "0.1.0-alpha.6"
 dependencies = [
  "bimap",
  "bytes",
  "getrandom",
+ "k256",
  "mpz-circuits",
  "mpz-core",
  "mpz-garble-core",
@@ -1205,8 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "tlsn-tls-core"
-version = "0.1.0-alpha.4"
-source = "git+https://github.com/tlsnotary/tlsn.git?tag=v0.1.0-alpha.4#309c37fdecd719d8837ec617646a2d394ac3386f"
+version = "0.1.0-alpha.6"
 dependencies = [
  "futures",
  "hmac",
@@ -1225,7 +1239,7 @@ dependencies = [
 [[package]]
 name = "tlsn-utils"
 version = "0.1.0"
-source = "git+https://github.com/tlsnotary/tlsn-utils?rev=51f313d#51f313d153f1b878e583e709d66a4661b40c2b6c"
+source = "git+https://github.com/tlsnotary/tlsn-utils?rev=45370cc#45370ccc6112328615721daad4f4084ff080f157"
 dependencies = [
  "serde",
 ]
@@ -1285,6 +1299,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "elliptic-curve",
+ "k256",
  "neon",
  "p256",
  "serde",

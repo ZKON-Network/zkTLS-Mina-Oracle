@@ -8,6 +8,22 @@ class P256Data extends Struct({
   messageHex: [Field,Field,Field,Field,Field,Field,Field,Field,Field,Field,Field,Field]
 }){}
 
+export class SessionHeader extends Struct({
+  encoderSeed: Provable.Array(Field, 32),
+  merkleRoot: Provable.Array(Field, 32),
+  sentLen: Provable.Array(Field, 8),
+  recvLen: Provable.Array(Field, 8),
+  handshakeSummary: Struct({
+    time: Provable.Array(Field, 8),
+    serverPublicKey: Struct({
+      group: Provable.Array(Field, 2),
+      key: Provable.Array(Field, 65),
+    }),
+    handshakeCommitment: Provable.Array(Field, 32),
+  }),
+}) { };
+
+
 class PublicArgumets extends Struct({
   commitment: Field,
   dataField:Field

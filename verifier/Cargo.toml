@@ -15,6 +15,7 @@ chrono = "0.4"
 neon = "1"
 elliptic-curve = { version = "0.13.5", features = ["pkcs8"] }
 p256 = { version = "0.13", features = ["pem", "ecdsa"] }
+k256 = "0.13.3"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn.git", tag = "v0.1.0-alpha.4", package = "tlsn-core" }
+tlsn-core = { path="/Users/soms/zk development/tlsn/tlsn/tlsn-core" }

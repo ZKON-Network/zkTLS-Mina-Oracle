@@ -1,12 +1,14 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount} from 'o1js';
-import { bytesToHex } from '@noble/hashes/utils';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount, createForeignCurveV2,createEcdsaV2, EcdsaSignatureV2} from 'o1js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String.js';
-import {numToUint8Array,concatenateUint8Arrays, breakStringIntoNParts} from './utils.js';
+import {numToUint8Array,concatenateUint8Arrays, breakStringIntoNParts, bytesToFields} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
+
+import { secp256k1 } from '@noble/curves/secp256k1';
 
 import {ZkonZkProgram} from 'zkon-zkapp';
 import {P256Data, PublicArgumets} from './zkProgram.js';
@@ -25,7 +27,8 @@ const sleep = async (ms:any) => {
     });
 }
 
-const pemData = fs.readFileSync('./notary.pub', 'utf-8');
+//const pemData = fs.readFileSync('./notary.pub', 'utf-8');
+const pemData = fs.readFileSync('./public_key_k256.pem', 'utf-8');
 
 const transactionFee = 100_000_000;
 const useCustomLocalNetwork = process.env.USE_CUSTOM_LOCAL_NETWORK === 'true';  
@@ -97,8 +100,9 @@ const main = async () => {
                 path: requestObjetct.baseURL.slice((requestObjetct.baseURL.indexOf('com')+4))
             }
             
-            console.log(requestObjetct);
+            //console.log(requestObjetct);
             
+            /*
             let zkAppCode = requestObjetct.zkapp;
             const __dirname = import.meta.dirname;
             const dir = __dirname+'/tmp/zkon-zkapps';
@@ -107,7 +111,7 @@ const main = async () => {
                 fs.mkdirSync(dir, { recursive: true });
             }
             fs.writeFileSync(dir + '/' + filename, zkAppCode);
-
+            */
             console.time('Execution of Request to TLSN Client & Proof Generation');
             const res = (await axios.post(`https://${config.PROOF_CLIENT_ADDR}`,proofObject, { httpsAgent: agent })).data;
             const {notary_proof,CM} = res;
@@ -131,8 +135,63 @@ const main = async () => {
                 "handshake_commitment":json_notary["handshake_summary"]["handshake_commitment"]
               };
 
+            //console.log(message)
             const msgByteArray = concatenateUint8Arrays(message);
+            console.log(bytesToHex(msgByteArray));
+            console.log(notary_proof["session"]["signature"]["P256"])
+
+            //Experiment: ECDSA Signature verification of ECDSA-SECP256K1 Signature.
+
+            const secp256k1Params = {
+                name: 'secp256k1',
+                modulus:  (1n << 256n) - (1n << 32n) - 0b1111010001n,
+                order: (1n << 256n) - 0x14551231950b75fc4402da1732fc9bebfn,
+                a: 0n,
+                b: 7n,
+                generator: {
+                  x: 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798n,
+                  y: 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8n,
+                },
+              };
+
+            class SECP256K1 extends createForeignCurveV2(secp256k1Params) {}
+            class Ecdsa extends createEcdsaV2(SECP256K1) {}
+
+            const fieldArrayMessage = bytesToFields(msgByteArray);
+
+            //ECDSA Signature Verification: Using Pure JS
+            const public_key_256 = hexToBytes('0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767')
+            const signatue_SECP256K1 = secp256k1.Signature.fromCompact(notary_proof["session"]["signature"]["P256"]);
+            console.log(signatue_SECP256K1.r)
+            console.log(signatue_SECP256K1.s)
+            //console.log(public_key_256.)
+            const resultECDSA = secp256k1.verify(signatue_SECP256K1,
+                msgByteArray,
+                public_key_256,
+                {prehash:true}
+                )
+
+            console.log(resultECDSA)
             
+            /* 
+                Test Parameters
+                Public Key: 0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767
+                SECP256K1 ECDSA Signature: 13BF0E0B95144FA15E946F0E63CB01CEE728AA2A473120B82B40A6F39C12B7CC4BD609565CF4F2A530C4C686171939BE4B7268424EEDB063158AA60BCF114DF0
+                Message Array: 6d332f53ec46730a3e6b82f60c0a79ca8a979c09e56ca2d43a2aa3dcfb94b7674d579783baee910e9b0c9f743fc5dc98955a5701bdbb6be58b77d17e158352ee0001000000000000c00300000000000080b9a866000000000041044185fc175854a9ee6dbf81590b90f29479f5280b2f3edf8f073d09228f5875927b1fec8e4f26fad46c31b1ce488233bdcc3c78ebe82197acae0e543f64dbb217805fb81a1d19feb6288f970671d9bc27e731aefbc066df00d1c4b9ec55ddb45b
+                r: 8931508849162888135033223828139195624012587407285915851720748463589474613196n
+                s: 34301633359669584391987402615146688447352716663178192030494368825097711603184n
+            */
+
+            const proveableSignature = new EcdsaSignatureV2({
+                r:8931508849162888135033223828139195624012587407285915851720748463589474613196n,
+                s:34301633359669584391987402615146688447352716663178192030494368825097711603184n
+            })
+
+            
+
+
+
+            /*
             //Construct decommitment from the verified authentic API response.
             class BytesAPI extends Bytes(API_Recv_Dat.length) {}
             let preimageBytes = BytesAPI.fromString(API_Recv_Dat);
@@ -261,9 +320,9 @@ const main = async () => {
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
         
-        console.log('');
+        console.log('');*/
         }
-        await sleep(15000); //5 seconds
+        await sleep(5000); //5 seconds
     }
 }
 
