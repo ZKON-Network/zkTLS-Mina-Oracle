@@ -1,4 +1,4 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount, createForeignCurveV2,createEcdsaV2, EcdsaSignatureV2} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount, createForeignCurveV2,createEcdsaV2, EcdsaSignatureV2, UInt8, ZkProgram, Provable} from 'o1js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import axios from 'axios';
 import https from 'https';
@@ -9,6 +9,7 @@ import * as path from 'path'
 import config from './config.js';
 
 import { secp256k1 } from '@noble/curves/secp256k1';
+import elliptic from 'elliptic';
 
 import {ZkonZkProgram} from 'zkon-zkapp';
 import {P256Data, PublicArgumets} from './zkProgram.js';
@@ -135,11 +136,7 @@ const main = async () => {
                 "handshake_commitment":json_notary["handshake_summary"]["handshake_commitment"]
               };
 
-            //console.log(message)
-            const msgByteArray = concatenateUint8Arrays(message);
-            console.log(bytesToHex(msgByteArray));
-            console.log(notary_proof["session"]["signature"]["P256"])
-
+            const msgByteArray = concatenateUint8Arrays(message); 
             //Experiment: ECDSA Signature verification of ECDSA-SECP256K1 Signature.
 
             const secp256k1Params = {
@@ -154,8 +151,9 @@ const main = async () => {
                 },
               };
 
-            class SECP256K1 extends createForeignCurveV2(secp256k1Params) {}
-            class Ecdsa extends createEcdsaV2(SECP256K1) {}
+            class Secp256k1 extends createForeignCurveV2(secp256k1Params) {}
+            class Scalar extends Secp256k1.Scalar {}
+            class Ecdsa extends createEcdsaV2(Secp256k1) {}
 
             const fieldArrayMessage = bytesToFields(msgByteArray);
 
@@ -175,23 +173,62 @@ const main = async () => {
             
             /* 
                 Test Parameters
+                Length of message UInt8 array is 187. 
                 Public Key: 0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767
                 SECP256K1 ECDSA Signature: 13BF0E0B95144FA15E946F0E63CB01CEE728AA2A473120B82B40A6F39C12B7CC4BD609565CF4F2A530C4C686171939BE4B7268424EEDB063158AA60BCF114DF0
                 Message Array: 6d332f53ec46730a3e6b82f60c0a79ca8a979c09e56ca2d43a2aa3dcfb94b7674d579783baee910e9b0c9f743fc5dc98955a5701bdbb6be58b77d17e158352ee0001000000000000c00300000000000080b9a866000000000041044185fc175854a9ee6dbf81590b90f29479f5280b2f3edf8f073d09228f5875927b1fec8e4f26fad46c31b1ce488233bdcc3c78ebe82197acae0e543f64dbb217805fb81a1d19feb6288f970671d9bc27e731aefbc066df00d1c4b9ec55ddb45b
                 r: 8931508849162888135033223828139195624012587407285915851720748463589474613196n
                 s: 34301633359669584391987402615146688447352716663178192030494368825097711603184n
             */
+            const signature_r:bigint= signatue_SECP256K1.r;
+            const signature_s:bigint= signatue_SECP256K1.s;
 
-            const proveableSignature = new EcdsaSignatureV2({
-                r:8931508849162888135033223828139195624012587407285915851720748463589474613196n,
-                s:34301633359669584391987402615146688447352716663178192030494368825097711603184n
-            })
+            //Parse the message-array into o1js compatible UInt8.
+            let messageParsed: UInt8[] = [];
+            msgByteArray.forEach((data)=>{
+                messageParsed.push(new UInt8(data))
+            });
+
+            class BytesN extends Bytes(187) {}
+
+            const ec = elliptic.ec;
+            const eCurve = new ec('secp256k1');
+
+            const publicKeyBytes = Buffer.from('0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767', 'hex');
+            const publicKey = eCurve.keyFromPublic(publicKeyBytes);
+
+            // const proveableSignature = new EcdsaSignatureV2({
+            //     r:signatue_SECP256K1.r,
+            //     s:signatue_SECP256K1.s
+            // })
+
+            // const signature = Ecdsa.from({
+            //     r:8931508849162888135033223828139195624012587400985915851720748463589474613196n,
+            //     s:34301633359669584391900402615146688447352716663178192030494368825097711603184n
+            // });
+
+            //console.log(signature);
+
+            const sig = Ecdsa.fromHex(`0x641405281DBD5F8C6835917FFDCABF6E0C8FC8ECF5298E3738F2474B16E6EA7A2F019F2649BAD0575B10F33FB30B49FCAA3284A3D423F95BF86B3A79593274B9`);
+            //const sig = Ecdsa.fromHex(`0x${notary_proof["session"]["signature"]["P256"]}`);
+            const msg = BytesN.from(messageParsed)
+
+            // let pk = Provable.witness(Secp256k1.provable, () => {x: BigInt(publicKey.getPublic().getX().toString()), y: BigInt(publicKey.getPublic().getY().toString())});
+            // let mesg = Provable.witness(Provable.Array(Field, 9), () => messageBytes.map(Field));
+            // let sign = Provable.witness(Ecdsa.provable, () => signature);
+
+            const valid = await sig.verifyV2(msg, {x: BigInt(publicKey.getPublic().getX().toString()), y: BigInt(publicKey.getPublic().getY().toString())})
+            if(valid) {
+                console.log("Signature Verified!");
+            } else {
+                console.log("Signature Failed.")
+            }
+
+
 
             
 
-
-
-            /*
+            /* Working Code: DO NOT TOUCH
             //Construct decommitment from the verified authentic API response.
             class BytesAPI extends Bytes(API_Recv_Dat.length) {}
             let preimageBytes = BytesAPI.fromString(API_Recv_Dat);
