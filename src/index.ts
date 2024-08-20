@@ -90,10 +90,6 @@ const main = async () => {
         });
         Mina.setActiveInstance(Network);        
 
-        const blockNr = 0
-        const fromBlock = blockNr;
-        const toBlock = (blockNr >= config.MAX_BLOCKS_TO_CHECK) ? (blockNr) - config.MAX_BLOCKS_TO_CHECK: 0;
-
         const address:any = config.MINA_ADDRESS;
         console.log(address);
         const logs = await fetchEvents({
@@ -136,8 +132,14 @@ const main = async () => {
                 continue;
             }
             
-            //Fetch JSON from IPFS            
-            let requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
+            //Fetch JSON from IPFS        
+            let requestObjetct;
+            try {    
+                requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
+            } catch (e) {
+                console.error(e);
+                continue;
+            }
             
             const proofObject ={
                 method: 'GET',
