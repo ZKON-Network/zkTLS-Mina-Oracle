@@ -7,6 +7,7 @@ import { StringCircuitValue } from './String.js';
 import {numToUint8Array,concatenateUint8Arrays, breakStringIntoNParts} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
+import * as URL from 'url';
 
 import {ZkonZkProgram} from 'zkon-zkapp';
 import {P256Data, PublicArgumets} from './zkProgram.js';
@@ -140,11 +141,13 @@ const main = async () => {
                 console.error(e);
                 continue;
             }
+
+            const url = URL.parse(requestObjetct.baseURL)
             
             const proofObject ={
                 method: 'GET',
-                baseURL: requestObjetct.baseURL.slice(0, (requestObjetct.baseURL.indexOf('com')+3)),
-                path: requestObjetct.baseURL.slice((requestObjetct.baseURL.indexOf('com')+4))
+                baseURL: url.protocol + '//' + url.host,
+                path: url.pathname!.slice(1) + (url.search ? url.search : '')
             }
             
             console.log(requestObjetct);
@@ -159,7 +162,13 @@ const main = async () => {
             fs.writeFileSync(dir + '/' + filename, zkAppCode);
 
             console.time('Execution of Request to TLSN Client & Proof Generation');
-            const res = (await axios.post(`https://${config.PROOF_CLIENT_ADDR}`,proofObject, { httpsAgent: agent })).data;
+            let res;
+            try {
+                res = (await axios.post(`https://${config.PROOF_CLIENT_ADDR}`,proofObject, { httpsAgent: agent })).data;
+            } catch(e) {
+                console.error(e);
+                continue;
+            }
             const {notary_proof,CM} = res;
 
             const result = Verifier.verify(JSON.stringify(notary_proof), pemData);
