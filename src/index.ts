@@ -146,7 +146,7 @@ const main = async () => {
             
             const proofObject ={
                 method: 'GET',
-                baseURL: url.host,
+                baseURL: url.protocol + '//' + url.host,
                 path: url.pathname!.slice(1) + (url.search ? url.search : '')
             }
             
@@ -200,18 +200,10 @@ const main = async () => {
 
             let rawData = jsonObject;
             if (requestObjetct.path){
-                let path = requestObjetct.path.split(',');
-                // ToDo Remove support for "." in the path
-                if (path.length == 1 && requestObjetct.path.indexOf('.') != -1) {
-                    path = requestObjetct.path.split('.');
-                }
+                const path = requestObjetct.path.split(',');
                 for (const element of path) {
                     rawData = rawData[element];
                 }
-            }
-            if (!rawData) {
-                console.error('Error reading from json using the path');
-                continue;
             }
 
             let signaturePartsString = breakStringIntoNParts(notary_proof["session"]["signature"]["P256"],4);
