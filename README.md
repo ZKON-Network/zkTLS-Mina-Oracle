@@ -24,24 +24,24 @@ response={
     "demoField-n":"dataField-n"
 }
 ```
-The TLS Notary client calculates the SHA256 commitment of this response. Say the `Commitment(response) == SHA256(String(response))`
+The Proof client calculates the SHA256 commitment of this response. Say the `Commitment(response) == SHA256(String(response))`
 
 Assume, SHA256(responseDataSource) = abc..z
 From the MPC Prover Client, we get:
 
 ```
 response_from_proofEndpoint={
-    "notary_proof":Equivalent of the proof.json,
+    "proof":Equivalent of the proof.json,
     "CM":SHA256(responseDataSource),
     "api_response":{actual dataSource Response}
 }
 ```
 
 What happens inside the Oracle post recieving this response?
-1. The notary_proof is verified to be correct. 
+1. The proof is verified to be correct. 
 2. From this verified proof, the actual datasource response is fetched.
 3. Decommitment is constructed of the same response.
-4. From the notary_proof, the signature data is taken, and a byte array is constructed to handle the message of the P256 Signature. 
+4. From the proof, the signature data is taken, and a byte array is constructed to handle the message of the P256 Signature. 
 5. To the zkProgram, we send:
 - The original commitment, SHA256(responseDataSource)
 - The constructed decommitment from the proof.json 
@@ -50,11 +50,3 @@ What happens inside the Oracle post recieving this response?
 - if the signature is correct & verified
 - the commitment from the \proof endpoint matches the decommitment constructed.
 
-# ToDo
-
-- [x] Change the TLSNotary-Cleint Endpoint.
-- [x] Make the TLSNotary client accept the requestObject
-- [x] Accomodate zkProgram changes
-- [x] Fix the commiment scheme, to make a uniform proof irrespective of data-source Endpoint.
-- [x] Change TLSNotary Client to accomodate generic data-source URLs. 
-- [ ] Use zkapp from IPFS & send back the event. 

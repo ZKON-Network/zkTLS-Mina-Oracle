@@ -1,7 +1,7 @@
 use std::{str, time::Duration};
 
 use elliptic_curve::pkcs8::DecodePublicKey;
-
+use k256::PublicKey;
 use tlsn_core::proof::{SessionProof, TlsProof};
 
 use neon::prelude::*;
@@ -68,6 +68,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 /// Returns a Notary pubkey trusted by this Verifier
-fn notary_pubkey(key: &str) -> p256::PublicKey {
-    p256::PublicKey::from_public_key_pem(key).unwrap()
+fn notary_pubkey(key: &str) -> k256::PublicKey {
+    k256::PublicKey::from_public_key_pem(key).unwrap()
 }

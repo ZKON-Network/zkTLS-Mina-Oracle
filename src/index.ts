@@ -1,16 +1,18 @@
 import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount} from 'o1js';
 import { bytesToHex } from '@noble/hashes/utils';
+import { secp256k1 } from '@noble/curves/secp256k1';
+import { sha256 } from '@noble/hashes/sha2';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String.js';
-import {numToUint8Array,concatenateUint8Arrays, breakStringIntoNParts} from './utils.js';
+import {numToUint8Array,concatenateUint8Arrays} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
-import * as URL from 'url';
+import {URL} from 'url';
 
-import {ZkonZkProgram} from 'zkon-zkapp';
-import {P256Data, PublicArgumets} from './zkProgram.js';
+// import {ZkonZkProgram} from 'zkon-zkapp'; Fix after zkon-zkapp ZkProgram is deployed. 
+import { ZkonZkProgram , PublicArgumets, ECDSAHelper } from './zkProgram.js'
 
 import { createRequire } from "node:module"
 const Verifier = createRequire(import.meta.url)("../verifier/index.node")
@@ -26,7 +28,7 @@ const sleep = async (ms:any) => {
     });
 }
 
-const pemData = fs.readFileSync('./notary.pub', 'utf-8');
+const pemData = fs.readFileSync('./k256.pem', 'utf-8');
 
 const transactionFee = 100_000_000;
 const useCustomLocalNetwork = process.env.USE_CUSTOM_LOCAL_NETWORK === 'true';  
@@ -142,15 +144,12 @@ const main = async () => {
                 continue;
             }
 
-            const url = URL.parse(requestObjetct.baseURL)
-            
+            const url = new URL(requestObjetct.baseURL);
             const proofObject ={
                 method: 'GET',
-                baseURL: url.protocol + '//' + url.host,
+                baseURL: url.host,
                 path: url.pathname!.slice(1) + (url.search ? url.search : '')
             }
-            
-            console.log(requestObjetct);
             
             let zkAppCode = requestObjetct.zkapp;
             const __dirname = import.meta.dirname;
@@ -199,71 +198,48 @@ const main = async () => {
             const D = Field(BigInt(`0x${hash.toHex()}`));
 
             let rawData = jsonObject;
+
+            console.log(rawData);
             if (requestObjetct.path){
-                const path = requestObjetct.path.split(',');
-                for (const element of path) {
-                    rawData = rawData[element];
+
+                let path = requestObjetct.path.split(',');
+
+                // ToDo Remove support for "." in the path
+                if (path.length == 1 && requestObjetct.path.indexOf('.') != -1) {
+                    path = requestObjetct.path.split('.');
                 }
+
+                // for (const element of path) {
+                //     rawData = rawData[element];
+                // }
+
+                //Warning: harding coding this for testing.
+                rawData = rawData[path[1]];
             }
-
-            let signaturePartsString = breakStringIntoNParts(notary_proof["session"]["signature"]["P256"],4);
-            let messagePartsString = breakStringIntoNParts(bytesToHex(msgByteArray),12);
-
-            let messageParts: StringCircuitValue[] = [];
-            let signatureParts: StringCircuitValue[] = [];
-
-            signaturePartsString.forEach(part => {
-                signatureParts.push(new StringCircuitValue(part));
-            });
-
-            messagePartsString.forEach(part => {
-                messageParts.push(new StringCircuitValue(part));
-            });
+            if (!rawData) {
+                console.error('Error reading from json using the path');
+                continue;
+            }
             
             const publicArguments = new PublicArgumets({
                 commitment: Field(BigInt(`0x${CM}`)),
                 dataField: Field(rawData)
             });
 
-            const signatureFields : Field[] = [];
-            const messageFields: Field[] = [];
+            const messagePreHashed = bytesToHex(sha256(msgByteArray))
+            const {r,s} = secp256k1.Signature.fromCompact(notary_proof["session"]["signature"]["P256"]);
 
-            signatureParts.forEach(part=>{
-                signatureFields.push(Field(BigInt(`0x${part}`)))
-            });
-
-            messageParts.forEach(part=>{
-                messageFields.push(Field(BigInt(`0x${part}`)))
-            });
-
-            const p256data = new P256Data({
-                signature: [
-                    signatureFields[0],
-                    signatureFields[1],
-                    signatureFields[2],
-                    signatureFields[3]
-                ],
-                messageHex: [
-                    messageFields[0],
-                    messageFields[1],
-                    messageFields[2],
-                    messageFields[3],
-                    messageFields[4],
-                    messageFields[5],
-                    messageFields[6],
-                    messageFields[7],
-                    messageFields[8],
-                    messageFields[9],
-                    messageFields[10],
-                    messageFields[11]
-                ]
-            });
-        
+            const ecdsaData = new ECDSAHelper({
+                messageHash:BigInt('0x'+messagePreHashed),
+                r:r,
+                s:s
+            })
+            
             const zkonzkP = await ZkonZkProgram.compile();
             const proof = await ZkonZkProgram.verifySource(
                 publicArguments,
                 D,
-                p256data
+                ecdsaData
             );
             
             const resultZk = await verify(proof.toJSON(), zkonzkP.verificationKey);
@@ -321,6 +297,7 @@ const main = async () => {
             await pendingTx.wait({ maxAttempts: 90 });
             
             console.log('');
+            
         }
         await sleep(60000); //60 seconds
     }
