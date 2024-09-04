@@ -209,12 +209,9 @@ const main = async () => {
                     path = requestObjetct.path.split('.');
                 }
 
-                // for (const element of path) {
-                //     rawData = rawData[element];
-                // }
-
-                //Warning: harding coding this for testing.
-                rawData = rawData[path[1]];
+                for (const element of path) {
+                    rawData = rawData[element];
+                }
             }
             if (!rawData) {
                 console.error('Error reading from json using the path');

@@ -39,7 +39,7 @@ const ZkonZkProgram = ZkProgram({
             const Recovery_xAffine = Field(checkECDSASignature);
             Recovery_xAffine.assertEquals(Field(ECDSASign.r),"Proof Failed: Recovery Point x-affine not same as Signature-R, Invalid ECDSA Signature.");
       
-            //decommitment.assertEquals(commitment.commitment); -> Redundant check since we are a single-node for now. 
+            decommitment.assertEquals(commitment.commitment);
         }
       }
     }
