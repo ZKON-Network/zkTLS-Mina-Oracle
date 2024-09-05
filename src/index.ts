@@ -150,6 +150,8 @@ const main = async () => {
                 baseURL: url.host,
                 path: url.pathname!.slice(1) + (url.search ? url.search : '')
             }
+
+            console.log(proofObject.path);
             
             let zkAppCode = requestObjetct.zkapp;
             const __dirname = import.meta.dirname;

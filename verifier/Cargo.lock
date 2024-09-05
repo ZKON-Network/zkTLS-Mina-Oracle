@@ -1198,6 +1198,7 @@ dependencies = [
 [[package]]
 name = "tlsn-core"
 version = "0.1.0-alpha.6"
+source = "git+https://github.com/ZKON-Network/notary-secp256k1.git#61e27601f1c6200d7d3e1573544df7a4f332806b"
 dependencies = [
  "bimap",
  "bytes",
@@ -1221,6 +1222,7 @@ dependencies = [
 [[package]]
 name = "tlsn-tls-core"
 version = "0.1.0-alpha.6"
+source = "git+https://github.com/ZKON-Network/notary-secp256k1.git#61e27601f1c6200d7d3e1573544df7a4f332806b"
 dependencies = [
  "futures",
  "hmac",

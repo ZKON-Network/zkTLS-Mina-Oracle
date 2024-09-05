@@ -5,6 +5,9 @@ license = "ISC"
 edition = "2021"
 exclude = ["index.node"]
 
+[net]
+git-fetch-with-cli = true
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -18,4 +21,6 @@ p256 = { version = "0.13", features = ["pem", "ecdsa"] }
 k256 = "0.13.3"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0"
-tlsn-core = { path="/Users/soms/zk development/tlsn/tlsn/tlsn-core" }
+tlsn-core = { git = "https://github.com/ZKON-Network/notary-secp256k1.git", package = "tlsn-core" }
+
+
