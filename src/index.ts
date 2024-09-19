@@ -141,12 +141,14 @@ const main = async () => {
             
             //Fetch JSON from IPFS        
             let requestObject;
-            try {    
-                requestObject = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
-            } catch (e) {
-                console.error(e);
-                continue;
-            }
+            // try {    
+            //     requestObject = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
+            // } catch (e) {
+            //     console.error(e);
+            //     continue;
+            // }
+
+            requestObject = {"method":"GET","baseURL":"https://random-data-api.com/api/number/random_number","path":"number","zkapp":"var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\n};\nvar __metadata = (this && this.__metadata) || function (k, v) {\n    if (typeof Reflect === \"object\" && typeof Reflect.metadata === \"function\") return Reflect.metadata(k, v);\n};\nimport { Field, PublicKey, SmartContract, State, ZkProgram, method, state, } from 'o1js';\nimport { ZkonZkProgram, ZkonRequestCoordinator, ExternalRequestEvent, } from 'zkon-zkapp';\nconst coordinatorAddress = PublicKey.fromBase58('B62qnmsn4Bm4MzPujKeN1faxedz4p1cCAwA9mKAWzDjfb4c1ysVvWeK');\nexport let ZkonProof_ = ZkProgram.Proof(ZkonZkProgram);\nexport class ZkonProof extends ZkonProof_ {\n}\nexport class Request extends SmartContract {\n    constructor() {\n        super(...arguments);\n        this.result = State();\n        this.events = {\n            requested: ExternalRequestEvent,\n        };\n    }\n    async sendRequest(hashPart1, hashPart2) {\n        const coordinator = new ZkonRequestCoordinator(coordinatorAddress);\n        const requestId = await coordinator.sendRequest(this.address, hashPart1, hashPart2);\n        const event = new ExternalRequestEvent({\n            id: requestId,\n            hash1: hashPart1,\n            hash2: hashPart2,\n        });\n        this.emitEvent('requested', event);\n        return requestId;\n    }\n    async receiveZkonResponse(requestId, proof) {\n        const coordinator = new ZkonRequestCoordinator(coordinatorAddress);\n        await coordinator.recordRequestFullfillment(requestId, proof);\n        this.result.set(proof.publicInput.dataField);\n    }\n    async someOtherMethod() { }\n}\n__decorate([\n    state(Field),\n    __metadata(\"design:type\", Object)\n], Request.prototype, \"result\", void 0);\n__decorate([\n    method.returns(Field),\n    __metadata(\"design:type\", Function),\n    __metadata(\"design:paramtypes\", [Field, Field]),\n    __metadata(\"design:returntype\", Promise)\n], Request.prototype, \"sendRequest\", null);\n__decorate([\n    method,\n    __metadata(\"design:type\", Function),\n    __metadata(\"design:paramtypes\", [Field, ZkonProof]),\n    __metadata(\"design:returntype\", Promise)\n], Request.prototype, \"receiveZkonResponse\", null);\n__decorate([\n    method,\n    __metadata(\"design:type\", Function),\n    __metadata(\"design:paramtypes\", []),\n    __metadata(\"design:returntype\", Promise)\n], Request.prototype, \"someOtherMethod\", null);\nexport default Request;\n//# sourceMappingURL=Request.js.map"};
             
             const url = new URL(requestObject.baseURL);
             const proofObject ={
@@ -231,43 +233,24 @@ const main = async () => {
 
             const messagePreHashed = bytesToHex(sha256(msgByteArray))
             const {r,s} = secp256k1.Signature.fromCompact(notary_proof["session"]["signature"]["P256"]);
+            const signatureP = Ecdsa.from({r:r,s:s})
+            const publicKeyE = Secp256k1.fromEthers('0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767')
 
             const ecdsaData = new ECDSAHelper({
                 messageHash:BigInt('0x'+messagePreHashed),
-                r:r,
-                s:s,
-                publicKeyX:BigInt(59584560953242332934734563514771605484743832818030684748574986816321863477095n),
-                publicKeyY:BigInt(35772424464574968427090264313855970786042086272413829287792016132157953251778n)
+                signature: signatureP,
+                publicKey: publicKeyE
             }) 
-           
-            /*
-            const signatureP = Ecdsa.from({r:r,s:s})
-            const msgStr = bytesToHex(msgByteArray);
-            const msgBytes = new TextEncoder().encode(msgStr); // Convert the message string to bytes
 
-            // Generate the hash using ethers.js
-            const ethersHash = hashMessage(msgBytes); // Hash the message using ethers.js
-
-            const msgECDSA  = Bytes(187).from(msgByteArray)
-            const messageSH256hash = Hash.SHA2_256.hash(msgECDSA);
-            const compressedPublicKey = '0x0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767';
-
-            //const point
-            const publicKeyE = Secp256k1.from({
-                x: BigInt(59584560953242332934734563514771605484743832818030684748574986816321863477095n),
-                y: BigInt(35772424464574968427090264313855970786042086272413829287792016132157953251778n)
-            });
-
-            //const publicKeyE = Secp256k1.fromEthers(compressedPublicKey);
-            // const isValid = signatureP.verifyV2(msgECDSA, 
-            //     publicKeyE);
-            
             const isValid = signatureP.verifySignedHashV2(
-                    Secp256k1.Scalar.from(ethersHash), // Hash the message using ethers.js hashMessage
-                    publicKeyE);
+                BigInt('0x'+messagePreHashed),
+                publicKeyE
+            )
             Provable.log('is valid: ', isValid);
-            */
-
+    
+            let zkon = await ZkonZkProgram.analyzeMethods();
+            console.log(zkon);
+            
             const zkonzkP = await ZkonZkProgram.compile();
             const proof = await ZkonZkProgram.verifySource(
                 publicArguments,
@@ -279,6 +262,8 @@ const main = async () => {
             console.timeEnd('Execution of Request to TLSN Client & Proof Generation')
             console.log('Proof verified?', resultZk);
             console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
+
+            
 
             //Send the transaction to the zkApp 
             let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
