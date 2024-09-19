@@ -7,3 +7,4 @@ zkProgram.bkp
 build
 tmp/
 /offline_backups
+test.ts
