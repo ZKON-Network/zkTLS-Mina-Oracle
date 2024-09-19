@@ -1,5 +1,3 @@
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
-
 const p = BigInt('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F');
   
 async function isPointOnCurve(x: bigint, y: bigint): Promise<boolean> {

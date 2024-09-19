@@ -1,5 +1,5 @@
 import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount,Provable, Crypto, createEcdsaV2, createForeignCurveV2, Circuit} from 'o1js';
-import { bytesToHex,hexToBytes } from '@noble/hashes/utils';
+import { bytesToHex } from '@noble/hashes/utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@noble/hashes/sha2';
 import axios from 'axios';
@@ -140,15 +140,15 @@ const main = async () => {
             }
             
             //Fetch JSON from IPFS        
-            let requestObjetct;
+            let requestObject;
             try {    
-                requestObjetct = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
+                requestObject = (await axios.get(`${config.IPFS_GATEWAY}${ipfsHashFile}`)).data;
             } catch (e) {
                 console.error(e);
                 continue;
             }
-    
-            const url = new URL(requestObjetct.baseURL);
+            
+            const url = new URL(requestObject.baseURL);
             const proofObject ={
                 method: 'GET',
                 baseURL: url.host,
@@ -157,7 +157,7 @@ const main = async () => {
 
             console.log(proofObject.path);
             
-            let zkAppCode = requestObjetct.zkapp;
+            let zkAppCode = requestObject.zkapp;
             const __dirname = import.meta.dirname;
             const dir = __dirname+'/tmp/zkon-zkapps';
             const filename = 'zkapp-'+parseInt((Math.random() * 100000000000000).toString())+'.js';
@@ -206,13 +206,13 @@ const main = async () => {
             let rawData = jsonObject;
 
             console.log(rawData);
-            if (requestObjetct.path){
+            if (requestObject.path){
 
-                let path = requestObjetct.path.split(',');
+                let path = requestObject.path.split(',');
 
                 // ToDo Remove support for "." in the path
-                if (path.length == 1 && requestObjetct.path.indexOf('.') != -1) {
-                    path = requestObjetct.path.split('.');
+                if (path.length == 1 && requestObject.path.indexOf('.') != -1) {
+                    path = requestObject.path.split('.');
                 }
 
                 for (const element of path) {
