@@ -1,11 +1,11 @@
-import { Mina, Field, ZkProgram, Struct, createEcdsaV2, createForeignCurveV2,Crypto, Scalar, Bool} from 'o1js';
-import { proveableECDSAreturnR } from './proveableECDSA.js'
+import { Mina, Field, ZkProgram, Struct, createEcdsaV2, createForeignCurveV2,Crypto, Bool} from 'o1js';
 
 class Secp256k1 extends createForeignCurveV2(Crypto.CurveParams.Secp256k1) {}
+class Scalar extends Secp256k1.Scalar {}
 class Ecdsa extends createEcdsaV2(Secp256k1) {}
 
 class ECDSAHelper extends Struct({
-  messageHash: BigInt,
+  messageHash: Scalar,
   signature: Ecdsa,
   publicKey: Secp256k1
 }){}
@@ -28,7 +28,7 @@ const ZkonZkProgram = ZkProgram({
           decommitment: Field,
           ECDSASign:ECDSAHelper,
         ){
-          // decommitment.assertEquals(commitment.commitment,"Response invalid.");
+          decommitment.assertEquals(commitment.commitment,"Response from proof-server invalid.");
           return ECDSASign.signature.verifySignedHashV2(
             ECDSASign.messageHash, ECDSASign.publicKey)
         }
