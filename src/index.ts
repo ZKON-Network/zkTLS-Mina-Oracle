@@ -148,7 +148,6 @@ const main = async () => {
                 console.error(e);
                 continue;
             }
- 
             const url = new URL(requestObject.baseURL);
             const proofObject ={
                 method: 'GET',
@@ -217,10 +216,10 @@ const main = async () => {
                 }
 
                 for (const element of path) {
-                    rawData = rawData[element];
+                    rawData = rawData[element]*1e8;
                 }
             }
-            if (!rawData) {
+            if (rawData==null || rawData == undefined) {
                 console.error('Error reading from json using the path');
                 continue;
             }
@@ -266,8 +265,6 @@ const main = async () => {
             console.log('Proof verified?', resultZk);
             console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
 
-            
-            /*
             //Send the transaction to the zkApp 
             let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);
             let sender = senderKey.toPublicKey();
@@ -316,7 +313,6 @@ const main = async () => {
             }
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
-            */
             console.log('');
         }
         await sleep(60000); //60 seconds
