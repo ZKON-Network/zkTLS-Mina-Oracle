@@ -6,7 +6,7 @@ import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
 import { StringCircuitValue } from './String.js';
-import {numToUint8Array,concatenateUint8Arrays} from './utils.js';
+import {numToUint8Array,concatenateUint8Arrays, fixImports} from './utils.js';
 import * as path from 'path'
 import config from './config.js';
 import {URL} from 'url';
@@ -148,6 +148,12 @@ const main = async () => {
                 console.error(e);
                 continue;
             }
+
+            try{
+                requestObject.zkapp = fixImports(requestObject.zkapp) || "Error in zkApp: No Zkon imports?"
+            }
+            catch(error){   console.error(error)    }
+
             const url = new URL(requestObject.baseURL);
             const proofObject ={
                 method: 'GET',
@@ -219,7 +225,7 @@ const main = async () => {
                     rawData = rawData[element]*1e8;
                 }
             }
-            if (rawData==null || rawData == undefined) {
+            if (rawData === undefined || rawData === null) {
                 console.error('Error reading from json using the path');
                 continue;
             }
