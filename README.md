@@ -1,6 +1,6 @@
-# zkTLS Mina Oracle Integration | ZKON
-
 ![Render - zkTLS Mina Oracle Integration](https://github.com/user-attachments/assets/6d0ed147-fa0c-4ba0-b501-633d7f968cea)
+
+# zkTLS Mina Oracle Integration | ZKON
 
 ## Compiling the Verifier module
 
