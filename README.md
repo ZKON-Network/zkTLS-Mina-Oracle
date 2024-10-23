@@ -1,17 +1,19 @@
-# Compiling the Verifier module
+# zkTLS Mina Oracle Deployment
+
+## Compiling the Verifier module
 
 Navigate to `/verifier`, and run `npm build`. This is an essential step for the entire flow to compile. 
 
-# How to run?
+## How to run?
 
 `npm run watch` to run index.ts in watch mode. 
 Disable the SSL Check agent before actual production use.
 
-# Env files
+## Env files
 
 Env files are read after sanity type checks. Please modify the structure of structure of the env interface in `configs.ts`
 
-# How commitment scheme works currently?
+## How commitment scheme works currently?
 
 Suppose an API has response, 
 ```
@@ -50,7 +52,7 @@ What happens inside the Oracle post recieving this response?
 - if the signature is correct & verified
 - the commitment from the \proof endpoint matches the decommitment constructed.
 
-# ToDo
+### ToDo
 
 - [x] Change the TLSNotary-Cleint Endpoint.
 - [x] Make the TLSNotary client accept the requestObject
