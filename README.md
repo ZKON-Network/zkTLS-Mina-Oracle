@@ -1,5 +1,7 @@
 # zkTLS Mina Oracle Integration | ZKON
 
+![Render - zkTLS Mina Oracle Integration](https://github.com/user-attachments/assets/6d0ed147-fa0c-4ba0-b501-633d7f968cea)
+
 ## Compiling the Verifier module
 
 Navigate to `/verifier`, and run `npm build`. This is an essential step for the entire flow to compile. 
