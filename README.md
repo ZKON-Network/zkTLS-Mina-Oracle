@@ -1,4 +1,4 @@
-# zkTLS Mina Oracle Integration
+# zkTLS Mina Oracle Integration | ZKON
 
 ## Compiling the Verifier module
 
