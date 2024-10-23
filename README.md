@@ -1,4 +1,4 @@
-# zkTLS Mina Oracle Deployment
+# zkTLS Mina Oracle Integration
 
 ## Compiling the Verifier module
 
