@@ -1,3 +1,7 @@
+import {Bytes, ForeignCurveV2, assert, UInt8, Field, Provable, Bool} from 'o1js';
+
+const l = 88n;
+
 export function numToUint8Array(num:any) {
     let arr = new Uint8Array(8);
   
@@ -129,4 +133,137 @@ export function fixImports(inputString: string): string|null {
         console.error('Error while replacing imports:', (error as Error).message);
         return null; // Return null or a default value to indicate failure
     }
+}
+
+export function replaceImports(codeString: string): string | null {
+    if (typeof codeString !== 'string') {
+      throw new TypeError('Input must be a string.');
+    }
+
+    // Update the regex to also capture aliases (e.g., ZkonZkProgram as J)
+    const regex = /import\s*{([^}]+)}\s*from\s*['"]zkon-zkapp['"];?/g;
+    const matches = codeString.match(regex);
+
+    if (!matches) {
+      return codeString;
+    }
+
+    // Extracting the import list inside the curly braces
+    const importStatement = matches[0];
+    const imports = importStatement.match(/{([^}]+)}/)?.[1].split(',').map(i => i.trim());
+
+    console.log(imports);
+
+    if (!imports) {
+      return codeString;
+    }
+
+    const group1: string[] = ['ExternalRequestEvent', 'ZkonProof', 'ZkonRequestCoordinator'];
+    const group2: string[] = ['ZkonZkProgram', 'PublicArguments', 'ECDSAHelper'];
+    const group3: string[] = ['StringCircuitValue']
+
+    // Find matching imports for both groups
+    const foundGroup1: string[] = [];
+    const foundGroup2: string[] = [];
+    const foundGroup3: string[] = [];
+
+    imports.forEach(importItem => {
+      const [importName, alias] = importItem.split(/\s+as\s+/); // Handle aliases
+      const normalizedImport = importName.trim();
+
+      if (group1.includes(normalizedImport)) {
+        foundGroup1.push(alias ? `${normalizedImport} as ${alias.trim()}` : normalizedImport);
+      } else if (group2.includes(normalizedImport)) {
+        foundGroup2.push(alias ? `${normalizedImport} as ${alias.trim()}` : normalizedImport);
+      } else if (group3.includes(normalizedImport)) {
+        foundGroup3.push(alias ? `${normalizedImport} as ${alias.trim()}` : normalizedImport);
+      } 
+    });
+
+    // If no matches from either group, throw an error
+    if (foundGroup1.length === 0 && foundGroup2.length === 0 && foundGroup3.length === 0) {
+      throw new Error('No relevant imports found in the string.');
+    }
+
+    // Prepare the new import lines
+    let additionalImports = '';
+
+    if (foundGroup1.length > 0) {
+      additionalImports += `import { ${foundGroup1.join(', ')} } from './ZkonRequestCoordinator.js';\n`;
+    }
+
+    if (foundGroup2.length > 0) {
+      additionalImports += `import { ${foundGroup2.join(', ')} } from './zkProgram.js';\n`;
+    }
+
+    if (foundGroup3.length > 0) {
+        additionalImports += `import { ${foundGroup3.join(', ')} } from './String.js';\n`;
+    }
+
+    console.log(codeString.includes('from"zkon-zkapp"'))
+    let returnString = codeString.replace(importStatement, additionalImports.trim());
+
+    //EdgeCase: Handle StringCircuitValue case: Suggest developers to stick to importing just one import {...} from "zkon-zkapp"
+    if(returnString.includes('from"zkon-zkapp"')){
+        returnString = returnString.replace('from"zkon-zkapp"', 'from"./String.js"')
+        return returnString
+    }
+
+    return returnString
+}
+
+export function keccakOutputToScalar(hash: Bytes, Curve: typeof ForeignCurveV2) {
+    const L_n = Curve.Scalar.sizeInBits;
+    // keep it simple for now, avoid dealing with dropping bits
+    // TODO: what does "leftmost bits" mean? big-endian or little-endian?
+    // @noble/curves uses a right shift, dropping the least significant bits:
+    // https://github.com/paulmillr/noble-curves/blob/4007ee975bcc6410c2e7b504febc1d5d625ed1a4/src/abstract/weierstrass.ts#L933
+    assert(L_n === 256, `Scalar sizes ${L_n} !== 256 not supported`);
+    assert(hash.length === 32, `hash length ${hash.length} !== 32 not supported`);
+  
+    // piece together into limbs
+    // bytes are big-endian, so the first byte is the most significant
+    assert(l === 88n);
+    let x2 = bytesToLimbBE(hash.bytes.slice(0, 10));
+    let x1 = bytesToLimbBE(hash.bytes.slice(10, 21));
+    let x0 = bytesToLimbBE(hash.bytes.slice(21, 32));
+  
+    return new Curve.Scalar.AlmostReduced([x0, x1, x2]);
+}
+
+export function bytesToLimbBE(bytes_: UInt8[]) {
+    let bytes = bytes_.map((x) => x.value);
+    let n = bytes.length;
+    let limb = bytes[0];
+    for (let i = 1; i < n; i++) {
+      limb = limb.mul(1n << 8n).add(bytes[i]);
+    }
+    return limb.seal();
+}
+
+export function checkHash(bytes_: UInt8[]): Bool {
+
+    let checkZero=Field(0);
+    //Provable.log("CheckZero-pre-check:",checkZero)
+
+    let bytes = bytes_.map((x)=> {
+        //Provable.log(x.value, x.value.equals(0))
+        const check = x.value.equals(Field(0))
+        const checkZeroInt = Provable.if(
+            check,
+            Field(1),
+            Field(0)
+        )
+        //Provable.log("Inside Map:", checkZeroInt)
+        checkZero = checkZero.add(checkZeroInt);
+        return x
+    })
+
+    Provable.log("CheckZero:",checkZero);
+    assert(checkZero.lessThan(32), "Zero-hash!")
+
+    let n = bytes.length;
+    Provable.log("Length:",n);
+    assert(n === 32, "Length greater than 32!")
+    return Bool(true)
 }

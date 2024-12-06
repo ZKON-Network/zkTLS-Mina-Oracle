@@ -1,18 +1,17 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount,Provable, Crypto, createEcdsaV2, createForeignCurveV2, Circuit} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount,Provable, Crypto, createEcdsaV2, createForeignCurveV2, Circuit, assert, UInt8, ForeignCurve, ForeignCurveV2, Bool} from 'o1js';
 import { bytesToHex } from '@noble/hashes/utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@noble/hashes/sha2';
 import axios from 'axios';
 import https from 'https';
 import * as fs from 'fs';
-import { StringCircuitValue } from './String.js';
-import {numToUint8Array,concatenateUint8Arrays, fixImports} from './utils.js';
+import { StringCircuitValue } from 'zkon-zkapp';
+import {numToUint8Array,concatenateUint8Arrays, replaceImports, keccakOutputToScalar,checkHash } from './utils.js';
 import * as path from 'path'
 import config from './config.js';
 import {URL} from 'url';
 import { hashMessage } from 'ethers';
-
-// import {ZkonZkProgram} from 'zkon-zkapp'; Fix after zkon-zkapp ZkProgram is deployed. 
+// import {ZkonZkProgram} from 'zkon-zkapp'; Fix after audit is finalized.
 import { ZkonZkProgram , PublicArgumets, ECDSAHelper } from './zkProgram.js'
 
 import { createRequire } from "node:module"
@@ -20,7 +19,7 @@ const Verifier = createRequire(import.meta.url)("../verifier/index.node")
 
 class Secp256k1 extends createForeignCurveV2(Crypto.CurveParams.Secp256k1) {}
 class Ecdsa extends createEcdsaV2(Secp256k1) {}
-class Scalar extends Secp256k1.Scalar {}
+class Bytes32 extends Bytes(32) {};
 
 // SSL Check disabled.
 const agent = new https.Agent({
@@ -150,7 +149,7 @@ const main = async () => {
             }
 
             try{
-                requestObject.zkapp = fixImports(requestObject.zkapp) || "Error in zkApp: No Zkon imports?"
+                requestObject.zkapp = replaceImports(requestObject.zkapp) || "Error in zkApp: No Zkon imports?"
             }
             catch(error){   console.error(error)    }
 
@@ -202,7 +201,7 @@ const main = async () => {
                 };
 
             const msgByteArray = concatenateUint8Arrays(message);
-            
+
             //Construct decommitment from the verified authentic API response.
             class BytesAPI extends Bytes(API_Recv_Dat.length) {}
             let preimageBytes = BytesAPI.fromString(API_Recv_Dat);
@@ -235,22 +234,22 @@ const main = async () => {
                 dataField: Field(rawData)
             });
 
-            const messagePreHashed = bytesToHex(sha256(msgByteArray))
             const {r,s} = secp256k1.Signature.fromCompact(notary_proof["session"]["signature"]["P256"]);
             const signatureP = Ecdsa.from({r:r,s:s})
             const publicKeyE = Secp256k1.fromEthers('0283bbaa97bcdddb1b83029ef3bf80b6d98ac5a396a18ce8e72e59d3ad0cf2e767')
 
+            let msgHash: Bytes32 = Hash.SHA2_256.hash(Bytes.from(msgByteArray));
+
+            const checkSigV2 = signatureP.verifySignedHashV2(
+                keccakOutputToScalar(msgHash, Secp256k1),
+                publicKeyE);
+            Provable.log("Using CheckSigV2: ",checkSigV2)
+
             const ecdsaData = new ECDSAHelper({
-                messageHash: new Scalar(BigInt('0x'+messagePreHashed)),
+                messageHash: msgHash,
                 signature: signatureP,
                 publicKey: publicKeyE
             }) 
-
-            const isValid = signatureP.verifySignedHashV2(
-                new Scalar(BigInt('0x'+messagePreHashed)),
-                publicKeyE
-            )
-            Provable.log('is valid: ', isValid);
     
             let zkon = await ZkonZkProgram.analyzeMethods();
             console.log(zkon);
@@ -320,6 +319,7 @@ const main = async () => {
             console.log('Waiting for transaction inclusion in a block.');
             await pendingTx.wait({ maxAttempts: 90 });
             console.log('');
+            
         }
         await sleep(60000); //60 seconds
     }
