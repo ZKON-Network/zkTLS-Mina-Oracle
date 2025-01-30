@@ -1,6 +1,6 @@
 ![Render - zkTLS Mina Oracle Integration](https://github.com/user-attachments/assets/6d0ed147-fa0c-4ba0-b501-633d7f968cea)
 
-# TrueData zkOracle - zkTLS Mina Integration
+# TrueData zkOracle - zkTLS Mina Integration | ZKON
 <img width="1352" alt="zkOracle - Schema 04" src="https://github.com/user-attachments/assets/f2990203-6237-483d-94c2-c05f40e93df3">
 
 ## Compiling the Verifier module
