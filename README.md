@@ -65,15 +65,10 @@ What happens inside the Oracle post recieving this response?
 - [ ] Use zkapp from IPFS & send back the event. 
 
 ---
-title: '**Formal Security Analysis of ZKON’s zkTLS Mina Oracle**'
-
----
 
 # **Formal Security Analysis of ZKON’s zkTLS Mina Oracle**
 
 This document presents a comprehensive and rigorous formal security analysis of ZKON’s zkTLS Mina Oracle, including formal adversary models, security assumptions, cryptographic definitions, detailed definitions of attacks, game-based security definitions, and rigorous proofs by contradiction. All elements are connected to adversary models and underlying cryptographic assumptions to ensure completeness and coherence.
-
----
 
 ## **1. Formal Adversary Model**
 
@@ -84,8 +79,6 @@ We consider adversaries $\mathcal{A}$ with the following capabilities:
 - **$\mathcal{A}_{O}$**: Corrupts the Oracle $O$, gaining access to its internal state, computation, and partial MPC data.
 - **$\mathcal{A}_{B}$**: Corrupts the blockchain $B$, attempting to tamper with on-chain proofs and state.
 
----
-
 ## **2. Security Assumptions**
 
 We assume:
@@ -95,8 +88,6 @@ We assume:
 - **A3. Soundness of zkProofs:** No adversary can forge a proof without the correct witness.
 - **A4. MPC privacy and correctness:** No partial collusion reveals the input.
 
----
-
 ## **3. Formal Cryptographic Definitions**
 
 We define:
@@ -105,8 +96,6 @@ We define:
 - **D2. Integrity:** Guarantees that $\mathcal{A}_{\mathsf{active}}$ cannot modify $m$ or the commitment $CM$ without detection.
 - **D3. Authenticity:** Ensures that no adversary $\mathcal{A}_{\mathsf{active}}$ or $\mathcal{A}_{O}$ can impersonate honest parties or forge valid proofs $\pi$.
 - **D4. Availability:** Ensures that $\mathcal{A}_{\mathsf{active}}$ or $\mathcal{A}_{O}$ cannot prevent $\Pi_{zkTLS}$ from completing successfully.
-
----
 
 ## **4. Attack Definitions and Connections to Adversary Model**
 
@@ -122,8 +111,6 @@ We define:
 - **Description:** $\mathcal{A}_{O}$ corrupts Oracle nodes to reconstruct user secrets from MPC shares.
 - **Security Property:** MPC privacy ensures no partial collusion reveals $m$.
 
----
-
 ## **5. Game-Based Security Definitions**
 
 We define the following games:
@@ -133,11 +120,10 @@ We define the following games:
 - **G3. Authenticity Game ($\mathcal{A}_{\mathsf{active}}, \mathcal{A}_{O}$)**: Tests if $\mathcal{A}$ can forge $m$ or $\pi$.
 - **G4. Availability Game ($\mathcal{A}_{\mathsf{active}}, \mathcal{A}_{O}$)**: Tests if $\mathcal{A}$ can halt $\Pi_{zkTLS}$.
 
----
-
 ## **6. Proofs of Security**
 
 ### **6.1 Proof of Confidentiality**
+
 #### **Theorem:**
 No PPT adversary $( \mathcal{A}_{\mathsf{passive}} )$ can break the confidentiality of $( \Pi_{zkTLS} )$ without violating the IND-CCA security of TLS or the privacy guarantees of MPC.
 
@@ -152,8 +138,6 @@ $$
 If $( \mathcal{A}_{\mathsf{passive}} )$ distinguishes with non-negligible probability, it implies a break in the IND-CCA security of the TLS encryption scheme.
 
 Thus, confidentiality holds.
-
----
 
 ### **6.2 Proof of Integrity**
 #### **Theorem:**
@@ -171,8 +155,6 @@ If $( CM = CM' )$ but $( m \neq m' )$, this breaks collision resistance of $( H 
 
 Thus, integrity holds.
 
----
-
 ### **6.3 Proof of Authenticity**
 #### **Theorem:**
 No adversary $( \mathcal{A} )$ can forge $( m, \pi )$ without breaking TLS or zkProofs.
@@ -188,8 +170,6 @@ $$
 If $( \mathcal{A} )$ succeeds, it breaks TLS integrity or zkProof soundness.
 
 Thus, authenticity holds.
-
----
 
 ### **6.4 Proof of Collusion Resistance**
 #### **Theorem:**
@@ -207,8 +187,6 @@ If $( \mathcal{A}_{O} )$ succeeds, it violates the honest-majority assumption, w
 
 Since the honest-majority assumption holds, no such $( \mathcal{A}_{O} )$ can exist.
 
-
-
 ### **6.5 Fake Key Reveal Attack**
 **Theorem:**  
 No PPT adversary can execute a fake key reveal attack on $\Pi_{zkTLS}$ without breaking A1, A2, or A3.
@@ -222,8 +200,6 @@ Assume there exists an adversary $\mathcal{A}$ that successfully performs a fake
 
 Since all assumptions hold, no such $\mathcal{A}$ can exist.
 
----
-
 ### **6.6 Replay Attack**
 **Theorem:**  
 $\Pi_{zkTLS}$ ensures resistance to replay attacks under assumptions A1 and A2.
@@ -232,8 +208,6 @@ $\Pi_{zkTLS}$ ensures resistance to replay attacks under assumptions A1 and A2.
 Assume $\mathcal{A}_{\mathsf{active}}$ successfully replays a session.  
 - If successful, it must bypass TLS session freshness checks (A1) or produce a collision in $H$ (A2).  
 Since both A1 and A2 hold, no such $\mathcal{A}$ can exist.
-
----
 
 ### **6.7 Key Compromise Impersonation (KCI) Attack**
 **Theorem:**  
@@ -244,8 +218,6 @@ Assume $\mathcal{A}_{O}$ successfully impersonates a compromised party.
 - This implies breaking forward secrecy in TLS (A1) or compromising the MPC protocol for future sessions (A4).  
 Since both hold, no such $\mathcal{A}$ can exist.
 
----
-
 ### **6.8 Downgrade Attack**
 **Theorem:**  
 $\Pi_{zkTLS}$ ensures resistance to downgrade attacks under assumptions A1 and A3.
@@ -254,8 +226,6 @@ $\Pi_{zkTLS}$ ensures resistance to downgrade attacks under assumptions A1 and A
 Assume $\mathcal{A}_{\mathsf{active}}$ successfully forces a downgrade.  
 - This implies bypassing the cryptographic suite integrity checks in TLS (A1) or forging proof of a weaker suite handshake (A3).  
 Since both hold, no such $\mathcal{A}$ can exist.
-
----
 
 ### **6.9 Oracle Manipulation Attack**
 **Theorem:**  
