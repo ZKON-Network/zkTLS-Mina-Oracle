@@ -1,10 +1,14 @@
-# Zkon zkTLS-Mina-Oracle
+![Render - zkTLS Mina Oracle Integration](https://github.com/user-attachments/assets/6d0ed147-fa0c-4ba0-b501-633d7f968cea)
+
+# TrueData zkOracle - zkTLS Mina Integration | ZKON
 
 ZKON is a decentralized Oracle Network that provides secure, verifiable data feeds through Zero-Knowledge Proofs (ZKPs), zkTLS, and cryptographic attestations.
 
 At heart of ZKON's On-chain Infrastructure lies the zkTLS-Mina-Oracle, which enables secure transfer of data through MPC-TLS and cryptographic attestations to it leveraging O1js's ZkPrograms.
 
 ## Overview
+
+<img width="1352" alt="zkOracle - Schema 04" src="https://github.com/user-attachments/assets/f2990203-6237-483d-94c2-c05f40e93df3">
 
 The Oracle's working can be broken down into 5 key parts:
 1. Fetch IPFS from the emitted event.
