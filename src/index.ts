@@ -1,4 +1,4 @@
-import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount,Provable, Crypto, createEcdsaV2, createForeignCurveV2, Circuit, assert, UInt8, ForeignCurve, ForeignCurveV2, Bool} from 'o1js';
+import { Mina, PublicKey, PrivateKey, Field, Bytes, Hash, verify,fetchEvents,fetchAccount,Provable, Crypto, createEcdsa, createForeignCurve, Circuit, assert, UInt8, ForeignCurve, Bool} from 'o1js';
 import { bytesToHex } from '@noble/hashes/utils';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { sha256 } from '@noble/hashes/sha2';
@@ -17,8 +17,8 @@ import { ZkonZkProgram , PublicArgumets, ECDSAHelper } from './zkProgram.js'
 import { createRequire } from "node:module"
 const Verifier = createRequire(import.meta.url)("../verifier/index.node")
 
-class Secp256k1 extends createForeignCurveV2(Crypto.CurveParams.Secp256k1) {}
-class Ecdsa extends createEcdsaV2(Secp256k1) {}
+class Secp256k1 extends createForeignCurve(Crypto.CurveParams.Secp256k1) {}
+class Ecdsa extends createEcdsa(Secp256k1) {}
 class Bytes32 extends Bytes(32) {};
 
 // SSL Check disabled.
@@ -240,7 +240,7 @@ const main = async () => {
 
             let msgHash: Bytes32 = Hash.SHA2_256.hash(Bytes.from(msgByteArray));
 
-            const checkSigV2 = signatureP.verifySignedHashV2(
+            const checkSigV2 = signatureP.verifySignedHash(
                 keccakOutputToScalar(msgHash, Secp256k1),
                 publicKeyE);
             Provable.log("Using CheckSigV2: ",checkSigV2)
@@ -264,11 +264,11 @@ const main = async () => {
             console.timeEnd("ZK Proof Generated in")
             
             console.time("Proof verified in")
-            const resultZk = await verify(proof.toJSON(), zkonzkP.verificationKey);
+            const resultZk = await verify( proof.proof.toJSON(), zkonzkP.verificationKey);
             console.timeEnd("Proof verified in")
             console.timeEnd('Execution of Request to Proof Client & Proof Generation')
             console.log('Proof verified?', resultZk);
-            console.log(`Proof's publicInput argument: ${proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
+            console.log(`Proof's publicInput argument: ${proof.proof.publicInput.dataField.toBigInt()}`) //proof.publicInput.dataField -> has the data of the path. 
 
             //Send the transaction to the zkApp 
             let senderKey = PrivateKey.fromBase58(config.MINA_PRIVATE_KEY!);

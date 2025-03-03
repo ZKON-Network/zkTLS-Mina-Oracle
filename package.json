@@ -41,14 +41,14 @@
     "https": "^1.0.0",
     "jest": "^28.1.3",
     "js-sha256": "^0.11.0",
-    "mina-fungible-token": "git+https://github.com/MinaFoundation/mina-fungible-token.git#971bf58962d47870d5bcf5a220dc3a80ca5321a0",
+    "mina-fungible-token": "git+https://github.com/MinaFoundation/mina-fungible-token.git#8dbf75a4a50d236d9a9ab137a7fd451bafddae41",
     "mina-signer": "^3.0.5",
-    "o1js": "^1.8.0",
+    "o1js": "^2.3.0",
     "prettier": "^2.3.2",
     "ts-jest": "^28.0.8",
     "typescript": "^5.4.3",
-    "zkapp-cli": "^0.21.5",
-    "zkon-zkapp": "git+https://github.com/ZKON-Network/zkapp.git#devnet"
+    "zkapp-cli": "^0.22.5",
+    "zkon-zkapp": "git+https://github.com/ZKON-Network/zkapp.git#version-upgrade-o1js"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",

@@ -1,4 +1,4 @@
-import {Bytes, ForeignCurveV2, assert, UInt8, Field, Provable, Bool} from 'o1js';
+import {Bytes, ForeignCurve, assert, UInt8, Field, Provable, Bool} from 'o1js';
 
 const l = 88n;
 
@@ -212,7 +212,7 @@ export function replaceImports(codeString: string): string | null {
     return returnString
 }
 
-export function keccakOutputToScalar(hash: Bytes, Curve: typeof ForeignCurveV2) {
+export function keccakOutputToScalar(hash: Bytes, Curve: typeof ForeignCurve) {
     const L_n = Curve.Scalar.sizeInBits;
     // keep it simple for now, avoid dealing with dropping bits
     // TODO: what does "leftmost bits" mean? big-endian or little-endian?
